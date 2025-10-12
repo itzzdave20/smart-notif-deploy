@@ -46,7 +46,7 @@
     "email": "sample@gmail.com",
     "role": "student",
     "created_at": "2025-10-04T07:30:56.044844",
-    "last_login": "2025-10-11T21:21:16.298209",
+    "last_login": "2025-10-11T22:16:47.221653",
     "permissions": [
       "read",
       "attendance",
