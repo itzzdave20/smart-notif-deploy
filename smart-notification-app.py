@@ -154,7 +154,16 @@ def clear_quick_meet_room():
         os.remove(room_file)
 
 def main():
-    st.markdown('<h1 class="main-header">🔔 Chat Ping </h1>', unsafe_allow_html=True)
+    st.markdown(
+        """
+        <div style="text-align: center;">
+            <h1 class="main-header">🔔 Chat Ping</h1>
+            <p>Smart Notification App</p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
     # Check authentication - admin, student, or instructor
     admin_logged_in = check_admin_auth()
     student_logged_in = check_student_auth()
