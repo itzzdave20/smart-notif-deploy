@@ -1,0 +1,38 @@
+{
+  "CS101": {
+    "class_name": "Introduction to Computer Science",
+    "instructor": "instructor",
+    "schedule": "Mon/Wed/Fri 10:00-11:00",
+    "room": "CS-101",
+    "enrolled_students": [
+      "student1",
+      "student2",
+      "student3"
+    ],
+    "created_at": "2025-10-04T04:50:51.806710",
+    "status": "active"
+  },
+  "CS201": {
+    "class_name": "Data Structures and Algorithms",
+    "instructor": "instructor",
+    "schedule": "Tue/Thu 14:00-15:30",
+    "room": "CS-201",
+    "enrolled_students": [
+      "student5",
+      "student6"
+    ],
+    "created_at": "2025-10-04T04:50:51.806710",
+    "status": "active"
+  },
+  "alpha-12": {
+    "class_name": "Computer Science",
+    "instructor": "instructor",
+    "schedule": "mon/8:30 pm",
+    "room": "CS-1221",
+    "enrolled_students": [
+      "Ashley Dave G. Duhaylungsod"
+    ],
+    "created_at": "2025-10-04T07:22:57.710602",
+    "status": "active"
+  }
+}

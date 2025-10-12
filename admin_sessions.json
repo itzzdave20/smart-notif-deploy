@@ -1,0 +1,65 @@
+{
+  "iTiJqntxXPcTuqCR6BtpC2xCwtl8aDcOMje-QFI84hk": {
+    "username": "admin",
+    "role": "super_admin",
+    "permissions": [
+      "all"
+    ],
+    "created_at": "2025-10-05T01:56:16.327258",
+    "expires_at": "2025-10-06T01:56:16.327258"
+  },
+  "yy7TVut1NSf8D_IzgOUxUbEr2SEZbBn7MW_8IDRLliE": {
+    "username": "admin",
+    "role": "super_admin",
+    "permissions": [
+      "all"
+    ],
+    "created_at": "2025-10-06T00:34:16.795793",
+    "expires_at": "2025-10-07T00:34:16.795793"
+  },
+  "AlIW0omaWywTKl0D4NFjV_r53J5UfbbUtQsoaseYN7Y": {
+    "username": "admin",
+    "role": "super_admin",
+    "permissions": [
+      "all"
+    ],
+    "created_at": "2025-10-06T00:38:39.043626",
+    "expires_at": "2025-10-07T00:38:39.043626"
+  },
+  "vpI1UbB2uhxO-uVF4t2CIT2P-socFO9cpTHplx8j4KQ": {
+    "username": "admin",
+    "role": "super_admin",
+    "permissions": [
+      "all"
+    ],
+    "created_at": "2025-10-06T00:39:44.062947",
+    "expires_at": "2025-10-07T00:39:44.062947"
+  },
+  "tuK-ZGrvnu7BsIYu1juYgFCQeckNtGnvD7CLfHOjUJI": {
+    "username": "admin",
+    "role": "super_admin",
+    "permissions": [
+      "all"
+    ],
+    "created_at": "2025-10-06T00:40:43.470833",
+    "expires_at": "2025-10-07T00:40:43.470833"
+  },
+  "SJupPJPuw39vy2rSCsAfopOdk_KbnK-A6hqqubrS8pA": {
+    "username": "admin",
+    "role": "super_admin",
+    "permissions": [
+      "all"
+    ],
+    "created_at": "2025-10-06T00:41:19.713824",
+    "expires_at": "2025-10-07T00:41:19.713824"
+  },
+  "xC17PVy0YNsfivzf2oBPedh3Z6IgwxrLcjANegec2Uk": {
+    "username": "admin",
+    "role": "super_admin",
+    "permissions": [
+      "all"
+    ],
+    "created_at": "2025-10-08T18:16:54.903759",
+    "expires_at": "2025-10-09T18:16:54.903759"
+  }
+}

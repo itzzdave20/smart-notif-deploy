@@ -1,0 +1,134 @@
+{
+  "ZMR2jTh7FU79ShpReGME4kciAqybDOXsEMoF5EjTU3Q": {
+    "username": "instructor",
+    "role": "instructor",
+    "permissions": [
+      "class_management",
+      "attendance",
+      "notifications",
+      "reports"
+    ],
+    "created_at": "2025-10-04T06:44:47.853035",
+    "expires_at": "2025-10-04T18:44:47.853035"
+  },
+  "y0HuG0OjBagzTJ2AJ4MfLN-am2v7_daZPEkBS85CPQA": {
+    "username": "instructor",
+    "role": "instructor",
+    "permissions": [
+      "class_management",
+      "attendance",
+      "notifications",
+      "reports"
+    ],
+    "created_at": "2025-10-04T06:56:11.669170",
+    "expires_at": "2025-10-04T18:56:11.669170"
+  },
+  "nEory-GjHIe_IyHziU09IgXogxOP4N5oj9rk_mWJEiQ": {
+    "username": "instructor",
+    "role": "instructor",
+    "permissions": [
+      "class_management",
+      "attendance",
+      "notifications",
+      "reports"
+    ],
+    "created_at": "2025-10-04T07:00:03.522975",
+    "expires_at": "2025-10-04T19:00:03.522975"
+  },
+  "n6iVW9zdMOck_H_zwmt3y3WCeR_4bGW4Hj7YN-KA-dc": {
+    "username": "instructor",
+    "role": "instructor",
+    "permissions": [
+      "class_management",
+      "attendance",
+      "notifications",
+      "reports"
+    ],
+    "created_at": "2025-10-04T07:02:19.490805",
+    "expires_at": "2025-10-04T19:02:19.490805"
+  },
+  "B128zNIhNSC3DdC5GA766Js3YyzGeKl_6IaXVUO_FVE": {
+    "username": "instructor",
+    "role": "instructor",
+    "permissions": [
+      "class_management",
+      "attendance",
+      "notifications",
+      "reports"
+    ],
+    "created_at": "2025-10-04T07:05:43.902322",
+    "expires_at": "2025-10-04T19:05:43.902322"
+  },
+  "-B_20ZTDSCN6y2_xXyqYcPWjWufxjxyyVbFPAsPUk2s": {
+    "username": "instructor",
+    "role": "instructor",
+    "permissions": [
+      "class_management",
+      "attendance",
+      "notifications",
+      "reports"
+    ],
+    "created_at": "2025-10-05T02:48:09.552963",
+    "expires_at": "2025-10-05T14:48:09.552963"
+  },
+  "fkQ73GR4vfI6AbmC_A4jPq8M5EzTXldTSVavwKV5NlA": {
+    "username": "instructor",
+    "role": "instructor",
+    "permissions": [
+      "class_management",
+      "attendance",
+      "notifications",
+      "reports"
+    ],
+    "created_at": "2025-10-05T03:23:48.167647",
+    "expires_at": "2025-10-05T15:23:48.167647"
+  },
+  "Xfk69IEJq7oPdYUXbaAOS9mXfUm2fubA7Rnrg8ih7os": {
+    "username": "instructor",
+    "role": "instructor",
+    "permissions": [
+      "class_management",
+      "attendance",
+      "notifications",
+      "reports"
+    ],
+    "created_at": "2025-10-05T17:28:04.741770",
+    "expires_at": "2025-10-06T05:28:04.741770"
+  },
+  "w2HMkxbBQXcbi9dMEvEK0HjMHk9cpZ_U81Q2_oXZqGY": {
+    "username": "instructor",
+    "role": "instructor",
+    "permissions": [
+      "class_management",
+      "attendance",
+      "notifications",
+      "reports"
+    ],
+    "created_at": "2025-10-06T00:10:15.061766",
+    "expires_at": "2025-10-06T12:10:15.061766"
+  },
+  "2tHVz8npQwH8NJ7J7XQ1W3vaot24k8oNkZMiyYr0PEI": {
+    "username": "instructor",
+    "role": "instructor",
+    "permissions": [
+      "class_management",
+      "attendance",
+      "notifications",
+      "reports"
+    ],
+    "created_at": "2025-10-06T18:21:33.526071",
+    "expires_at": "2025-10-07T06:21:33.526071"
+  },
+  "L-Au4P7jgE81XSoVEBbaQIcQj-wYFEKsNJGTkqYS790": {
+    "username": "instructor",
+    "role": "instructor",
+    "permissions": [
+      "class_management",
+      "attendance",
+      "notifications",
+      "reports"
+    ],
+    "created_at": "2025-10-08T02:42:18.254105",
+    "expires_at": "2025-10-08T14:42:18.254105"
+  }
+}

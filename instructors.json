@@ -1,0 +1,24 @@
+{
+  "instructor": {
+    "password_hash": "796c030d1ac8dcd3d7eba16d5158052f:9d30d1d68282144751c2628be7daca18c8cdd8db9b4753a69a6e049c2e46036b",
+    "email": "instructor@example.com",
+    "role": "instructor",
+    "created_at": "2025-10-04T04:50:51.802709",
+    "last_login": "2025-10-10T03:24:37.015600",
+    "permissions": [
+      "class_management",
+      "attendance",
+      "notifications",
+      "reports"
+    ],
+    "profile": {
+      "first_name": "Dr. Sarah",
+      "last_name": "Johnson",
+      "department": "Computer Science",
+      "phone": "+1-555-0123",
+      "office": "CS-101",
+      "notifications_enabled": true,
+      "specialization": "AI/ML"
+    }
+  }
+}

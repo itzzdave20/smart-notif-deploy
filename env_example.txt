@@ -1,0 +1,30 @@
+# Environment Configuration
+# Copy this file to .env and update with your actual values
+
+# Database settings
+DATABASE_PATH=attendance.db
+FACE_ENCODINGS_PATH=face_encodings/
+
+# Notification settings
+NOTIFICATION_API_KEY=your_firebase_or_push_service_key_here
+NOTIFICATION_ENABLED=true
+
+# Email settings (for email notifications)
+SMTP_SERVER=smtp.gmail.com
+SMTP_PORT=587
+EMAIL_USERNAME=your_email@gmail.com
+EMAIL_PASSWORD=your_app_password
+
+# Webhook settings (for webhook notifications)
+WEBHOOK_URL=https://your-webhook-url.com/notifications
+
+# AI Model settings
+SENTIMENT_ANALYSIS_MODEL=cardiffnlp/twitter-roberta-base-sentiment-latest
+
+# Face recognition settings
+FACE_RECOGNITION_TOLERANCE=0.6
+FACE_RECOGNITION_MODEL=hog
+
+# Streamlit settings
+STREAMLIT_SERVER_PORT=8501
+STREAMLIT_SERVER_ADDRESS=localhost

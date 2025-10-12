@@ -1,0 +1,107 @@
+{
+  "student": {
+    "password_hash": "95b403fa9b15c6f667bf4526fc77c0bd:82b8b0baf0d8707761c845c521ddee26ea62ea9b1b8a42bac8ee265218d00c18",
+    "email": "student@example.com",
+    "role": "student",
+    "created_at": "2025-10-04T06:41:58.864301",
+    "last_login": "2025-10-05T01:41:42.610273",
+    "permissions": [
+      "read",
+      "attendance",
+      "notifications"
+    ],
+    "profile": {
+      "first_name": "John",
+      "last_name": "Doe",
+      "student_id": "STU001",
+      "major": "Computer Science",
+      "year": "Sophomore",
+      "phone": "",
+      "notifications_enabled": true
+    }
+  },
+  "Duhaylungsod, Ashley Dave": {
+    "password_hash": "3b9803e57f6457c957b25e412e16c5bb:412412e597613b367ba94c132494bb516414d76093800ed6610e4af98372dc7c",
+    "email": "daveguibejar@gmail.com",
+    "role": "student",
+    "created_at": "2025-10-04T07:18:57.011732",
+    "last_login": "2025-10-04T07:28:04.078347",
+    "permissions": [
+      "read",
+      "attendance",
+      "notifications"
+    ],
+    "profile": {
+      "first_name": "Ashley Dave ",
+      "last_name": "Duhaylungsod",
+      "student_id": "2023-13224",
+      "major": "Computer Science",
+      "year": "Freshman",
+      "phone": "09638291586",
+      "notifications_enabled": true
+    }
+  },
+  "clifford": {
+    "password_hash": "f46f19d080ae542c3811340a1649ebbe:1aabfd0ca0b5306271a5adb657bd5181318cf2134f0c4788914eb4ee69cefd12",
+    "email": "sample@gmail.com",
+    "role": "student",
+    "created_at": "2025-10-04T07:30:56.044844",
+    "last_login": "2025-10-11T21:21:16.298209",
+    "permissions": [
+      "read",
+      "attendance",
+      "notifications"
+    ],
+    "profile": {
+      "first_name": "clifford",
+      "last_name": "bagtik",
+      "student_id": "2023-1232",
+      "major": "Computer Science",
+      "year": "Freshman",
+      "phone": "",
+      "notifications_enabled": true
+    }
+  },
+  "itzzdave": {
+    "password_hash": "cefc0101514c9aeca18688f90bb2f0ef:30f18bb6eed65f826977a0e12e2b43271410e1cd4b8698e67216d688a17bb16f",
+    "email": "ash@gmail.com",
+    "role": "student",
+    "created_at": "2025-10-04T09:18:47.397799",
+    "last_login": "2025-10-04T09:21:32.901482",
+    "permissions": [
+      "read",
+      "attendance",
+      "notifications"
+    ],
+    "profile": {
+      "first_name": "Ashley",
+      "last_name": "Guibejar",
+      "student_id": "2024-46568",
+      "major": "Engineering",
+      "year": "Sophomore",
+      "phone": "",
+      "notifications_enabled": true
+    }
+  },
+  "itsmerae": {
+    "password_hash": "f4d6cfd7097adee70849440d5107ef97:85d7ad633d059350e63c798ea6f7d7660a595dc0ca28f32fdf4553fff8e2dfb7",
+    "email": "rae@gmail.com",
+    "role": "student",
+    "created_at": "2025-10-06T23:49:37.598036",
+    "last_login": "2025-10-06T23:50:02.903248",
+    "permissions": [
+      "read",
+      "attendance",
+      "notifications"
+    ],
+    "profile": {
+      "first_name": "Era Jean ",
+      "last_name": "Salem",
+      "student_id": "123456789",
+      "major": "Computer Science",
+      "year": "Junior",
+      "phone": "",
+      "notifications_enabled": true
+    }
+  }
+}

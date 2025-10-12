@@ -1,0 +1,20 @@
+{
+  "user": {
+    "password_hash": "06ac8bb36dfd1b51b8ecd167aefda603:9d947cac1557ad2930740e8e06fdbeb7b77eca96a8aa1a16571936acf766f0f2",
+    "email": "user@example.com",
+    "role": "user",
+    "created_at": "2025-10-04T04:50:51.800712",
+    "last_login": "2025-10-04T05:30:58.684763",
+    "permissions": [
+      "read",
+      "attendance"
+    ],
+    "profile": {
+      "first_name": "John",
+      "last_name": "Doe",
+      "department": "General",
+      "phone": "",
+      "notifications_enabled": true
+    }
+  }
+}
