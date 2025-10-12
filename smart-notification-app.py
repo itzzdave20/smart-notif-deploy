@@ -52,16 +52,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Default values
-default_date = datetime.now().date()
-default_time = (datetime.now() + timedelta(hours=1)).time()
 
-# Separate date and time pickers
-scheduled_date = st.date_input("Select date", value=default_date)
-scheduled_time = st.time_input("Select time", value=default_time)
-
-# Combine into a single datetime object
-scheduled_datetime = datetime.combine(scheduled_date, scheduled_time)
 
 # Simple notification sound (plays a short beep via Web Audio API)
 def play_notification_sound():
@@ -640,6 +631,16 @@ def show_attendance_management():
                 st.error("❌ Failed to capture from camera")
 
 def show_notifications():
+    # Default values
+    default_date = datetime.now().date()
+    default_time = (datetime.now() + timedelta(hours=1)).time()
+
+    # Separate date and time pickers
+    scheduled_date = st.date_input("Select date", value=default_date)
+    scheduled_time = st.time_input("Select time", value=default_time)
+
+    # Combine into a single datetime object
+    scheduled_datetime = datetime.combine(scheduled_date, scheduled_time)
     st.header("🔔 Smart Notifications")
     
     tab1, tab2, tab3 = st.tabs(["Create Notification", "Notification History", "Send Notifications"])
