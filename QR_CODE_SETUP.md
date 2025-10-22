@@ -2,11 +2,39 @@
 
 ## Installation Requirements
 
-To use the QR code attendance feature, you need to install the `qrcode` library:
+To use the QR code attendance feature, you need to install the `qrcode` library.
 
+### Quick Installation Options:
+
+**Option 1: Using the installation script**
+```bash
+python install_qr.py
+```
+
+**Option 2: Manual installation**
 ```bash
 pip install qrcode[pil]
 ```
+
+**Option 3: Using requirements.txt**
+```bash
+pip install -r requirements.txt
+```
+
+### What gets installed?
+- `qrcode`: Main library for generating QR codes
+- `Pillow`: Image processing library (required by qrcode)
+- `[pil]`: Ensures Pillow is installed with correct dependencies
+
+### Verification
+After installation, verify it works:
+```bash
+python -c "import qrcode; print('✅ QR code library installed successfully!')"
+```
+
+### Troubleshooting
+- If you get "ModuleNotFoundError": Try `pip3 install qrcode[pil]` or `python -m pip install qrcode[pil]`
+- If you get PIL errors: Try `pip install Pillow` first, then `pip install qrcode[pil]`
 
 ## How It Works
 

@@ -46,7 +46,7 @@
     "email": "sample@gmail.com",
     "role": "student",
     "created_at": "2025-10-04T07:30:56.044844",
-    "last_login": "2025-10-22T03:56:18.791879",
+    "last_login": "2025-10-22T06:01:02.178019",
     "permissions": [
       "read",
       "attendance",
@@ -62,7 +62,8 @@
       "notifications_enabled": true
     },
     "enrolled_classes": [
-      "CS101"
+      "CS101",
+      "CS201"
     ]
   },
   "itzzdave": {

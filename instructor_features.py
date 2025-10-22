@@ -213,7 +213,11 @@ def show_instructor_class_attendance():
                 st.session_state.current_qr_data = qr_data
                 st.session_state.current_qr_session = session_id
                 
-                st.success(f"✅ QR Code generated! Valid for {valid_minutes} minutes")
+                if qr_img is None:
+                    st.error("QR library not installed on the server. Ask admin to run: pip install qrcode[pil]")
+                    st.code(json.dumps(qr_data, indent=2))
+                else:
+                    st.success(f"✅ QR Code generated! Valid for {valid_minutes} minutes")
         
         with col2:
             if 'current_qr_data' in st.session_state:
@@ -225,13 +229,17 @@ def show_instructor_class_attendance():
                     selected_class, instructor_info['username'], valid_minutes
                 )
                 
-                # Convert PIL image to bytes for display
-                import io
-                img_buffer = io.BytesIO()
-                qr_img.save(img_buffer, format='PNG')
-                img_buffer.seek(0)
-                
-                st.image(img_buffer, caption=f"Scan to mark attendance for {selected_class}", width=300)
+                if qr_img is None:
+                    st.warning("QR image not available (library missing). Use the QR data below instead:")
+                    st.code(json.dumps(qr_data, indent=2))
+                else:
+                    # Convert PIL image to bytes for display
+                    import io
+                    img_buffer = io.BytesIO()
+                    qr_img.save(img_buffer, format='PNG')
+                    img_buffer.seek(0)
+                    
+                    st.image(img_buffer, caption=f"Scan to mark attendance for {selected_class}", width=300)
                 
                 # Show QR code info
                 from datetime import datetime

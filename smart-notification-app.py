@@ -11,7 +11,12 @@ from PIL import Image
 import time
 import json
 import os
-import qrcode
+try:
+    import qrcode
+    QR_LIB_AVAILABLE = True
+except ImportError:
+    QR_LIB_AVAILABLE = False
+    qrcode = None
 import hashlib
 import uuid
 
@@ -160,6 +165,9 @@ def show_browser_notification(title, body):
 # QR Code Functions
 def generate_qr_code(data, size=200):
     """Generate a QR code image"""
+    if not QR_LIB_AVAILABLE:
+        raise RuntimeError("QR code library not installed. Please install with: pip install qrcode[pil]")
+    
     qr = qrcode.QRCode(
         version=1,
         error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -175,6 +183,19 @@ def generate_qr_code(data, size=200):
 
 def generate_attendance_qr(class_code, instructor_username, valid_minutes=30):
     """Generate QR code for class attendance"""
+    if not QR_LIB_AVAILABLE:
+        # Provide a graceful fallback object so UI can instruct user/admin
+        fallback = {
+            "type": "attendance",
+            "class_code": class_code,
+            "instructor": instructor_username,
+            "session_id": str(uuid.uuid4()),
+            "timestamp": datetime.now().isoformat(),
+            "expiry": (datetime.now() + timedelta(minutes=valid_minutes)).isoformat(),
+            "valid_minutes": valid_minutes
+        }
+        return None, fallback, fallback["session_id"]
+    
     # Create unique attendance session
     session_id = str(uuid.uuid4())
     timestamp = datetime.now()

@@ -20,7 +20,8 @@
     "room": "CS-201",
     "enrolled_students": [
       "student5",
-      "student6"
+      "student6",
+      "clifford"
     ],
     "created_at": "2025-10-04T04:50:51.806710",
     "status": "active"
