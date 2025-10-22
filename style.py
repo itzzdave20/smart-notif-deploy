@@ -131,7 +131,7 @@ GLOBAL_CSS = string.Template("""
   .card-warning { border-left: 4px solid #f4a100; background: #fff9e6; padding: 1rem; border-radius: 8px; }
   .card-danger { border-left: 4px solid #d64545; background: #fff1f3; padding: 1rem; border-radius: 8px; }
 
-  /* Responsive layout tweaks for small screens */
+  /* Mobile-first responsive design */
   @media (max-width: 768px) {
     .main-header {
       font-size: 1.8rem;
@@ -141,6 +141,191 @@ GLOBAL_CSS = string.Template("""
       padding-left: 0.5rem;
       padding-right: 0.5rem;
     }
+    
+    /* Mobile-specific button improvements */
+    .stButton>button {
+      min-height: 48px;
+      padding: 1rem 1.5rem;
+      font-size: 1.1rem;
+      touch-action: manipulation;
+    }
+    
+    /* Mobile form improvements */
+    .stTextInput>div>div>input,
+    .stPassword>div>div>input,
+    .stSelectbox>div>div>div>div,
+    .stNumberInput>div>div>input,
+    .stTextArea>div>div>textarea {
+      min-height: 48px;
+      font-size: 16px; /* Prevents zoom on iOS */
+      padding: 12px;
+    }
+    
+    /* Mobile table improvements */
+    .stDataFrame {
+      font-size: 14px;
+      overflow-x: auto;
+    }
+    
+    /* Mobile sidebar improvements */
+    [data-testid="stSidebar"] {
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+    
+    /* Mobile column improvements */
+    .stColumn {
+      margin-bottom: 1rem;
+    }
+    
+    /* Mobile notification cards */
+    .notification-card {
+      margin-bottom: 0.5rem;
+      padding: 0.75rem;
+    }
+    
+    /* Mobile metric cards */
+    .metric-card {
+      margin-bottom: 0.5rem;
+      padding: 0.75rem;
+    }
+  }
+  
+  /* iPhone specific fixes */
+  @media (max-width: 414px) {
+    .main-header {
+      font-size: 1.6rem;
+    }
+    
+    .stButton>button {
+      min-height: 44px;
+      padding: 0.8rem 1.2rem;
+      font-size: 1rem;
+    }
+    
+    .block-container {
+      padding-left: 0.25rem;
+      padding-right: 0.25rem;
+    }
+  }
+  
+  /* Landscape mobile orientation */
+  @media (max-width: 896px) and (orientation: landscape) {
+    .main-header {
+      font-size: 1.4rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .stButton>button {
+      min-height: 40px;
+      padding: 0.6rem 1rem;
+    }
+  }
+  
+  /* Touch device improvements */
+  @media (hover: none) and (pointer: coarse) {
+    .stButton>button:hover {
+      background-color: var(--primary-color) !important;
+    }
+    
+    /* Increase touch targets */
+    .stButton>button,
+    .stSelectbox>div>div>div,
+    .stCheckbox>div>div>div>label {
+      min-height: 44px;
+    }
+  }
+  
+  /* iOS Safari specific fixes */
+  .ios-device {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .ios-device .stTextInput>div>div>input,
+  .ios-device .stPassword>div>div>input,
+  .ios-device .stTextArea>div>div>textarea {
+    font-size: 16px !important; /* Prevents zoom */
+    transform: translateZ(0); /* Hardware acceleration */
+  }
+  
+  /* Android specific fixes */
+  .android-device .stButton>button {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Mobile device specific improvements */
+  .mobile-device {
+    /* Prevent horizontal scroll */
+    overflow-x: hidden;
+  }
+  
+  .mobile-device .stDataFrame {
+    font-size: 12px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .mobile-device .stTabs [role="tablist"] {
+    flex-wrap: wrap;
+  }
+  
+  .mobile-device .stTabs [role="tab"] {
+    min-width: auto;
+    flex: 1;
+    text-align: center;
+  }
+  
+  /* Fix for mobile sidebar */
+  .mobile-device [data-testid="stSidebar"] {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    height: 100vh !important;
+    z-index: 999 !important;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  
+  .mobile-device [data-testid="stSidebar"][aria-expanded="true"] {
+    transform: translateX(0);
+  }
+  
+  /* Mobile-friendly file uploader */
+  .mobile-device .stFileUploader>div {
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    background: #f9f9f9;
+  }
+  
+  /* Mobile notification improvements */
+  .mobile-device .notification-card {
+    margin: 10px 0;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  
+  /* Mobile form improvements */
+  .mobile-device .stForm {
+    padding: 10px;
+  }
+  
+  .mobile-device .stForm .stButton {
+    margin-top: 15px;
+  }
+  
+  /* Mobile table improvements */
+  .mobile-device table {
+    font-size: 14px;
+    width: 100%;
+  }
+  
+  .mobile-device th,
+  .mobile-device td {
+    padding: 8px 4px;
+    word-wrap: break-word;
   }
 </style>
 """).substitute(

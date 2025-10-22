@@ -32,20 +32,70 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Inject mobile-friendly viewport for better rendering on phones/tablets
+# Enhanced mobile-friendly viewport and device detection
 st.markdown(
     """
     <script>
     (function(){
       try {
+        // Enhanced viewport meta tag for better mobile support
         var existing = document.querySelector('meta[name="viewport"]');
         if (!existing) {
           var m = document.createElement('meta');
           m.name = 'viewport';
-          m.content = 'width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover';
+          m.content = 'width=device-width, initial-scale=1, maximum-scale=5, minimum-scale=1, user-scalable=yes, viewport-fit=cover';
           document.head.appendChild(m);
+        } else {
+          // Update existing viewport for better mobile support
+          existing.content = 'width=device-width, initial-scale=1, maximum-scale=5, minimum-scale=1, user-scalable=yes, viewport-fit=cover';
         }
-      } catch(e) {}
+        
+        // Add mobile-specific CSS classes
+        var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        var isAndroid = /Android/.test(navigator.userAgent);
+        
+        if (isMobile) {
+          document.documentElement.classList.add('mobile-device');
+        }
+        if (isIOS) {
+          document.documentElement.classList.add('ios-device');
+        }
+        if (isAndroid) {
+          document.documentElement.classList.add('android-device');
+        }
+        
+        // Fix iOS Safari viewport height issues
+        if (isIOS) {
+          function setViewportHeight() {
+            var vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', vh + 'px');
+          }
+          setViewportHeight();
+          window.addEventListener('resize', setViewportHeight);
+          window.addEventListener('orientationchange', function() {
+            setTimeout(setViewportHeight, 100);
+          });
+        }
+        
+        // Prevent zoom on input focus for iOS
+        if (isIOS) {
+          var inputs = document.querySelectorAll('input, textarea, select');
+          inputs.forEach(function(input) {
+            input.addEventListener('focus', function() {
+              if (window.innerWidth < 768) {
+                document.querySelector('meta[name="viewport"]').content = 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no';
+              }
+            });
+            input.addEventListener('blur', function() {
+              document.querySelector('meta[name="viewport"]').content = 'width=device-width, initial-scale=1, maximum-scale=5, minimum-scale=1, user-scalable=yes, viewport-fit=cover';
+            });
+          });
+        }
+        
+      } catch(e) {
+        console.log('Mobile detection error:', e);
+      }
     })();
     </script>
     """,
@@ -1442,7 +1492,41 @@ def show_quick_meet():
         if st.button("Start/Announce Meeting", type="primary"):
             set_quick_meet_room(room_name, "instructor")
             st.success("Meeting announced! Students will see a join prompt.")
-            st.markdown(f"[Open Meeting in New Tab]({meet_url})", unsafe_allow_html=True)
+            
+            # Mobile-friendly meeting links
+            st.markdown(f"""
+            <div style="text-align: center; margin: 1rem 0;">
+                <a href="{meet_url}" target="_blank" style="
+                    display: inline-block;
+                    background-color: #FF6B6B;
+                    color: white;
+                    padding: 12px 24px;
+                    text-decoration: none;
+                    border-radius: 8px;
+                    font-weight: bold;
+                    font-size: 16px;
+                    min-height: 48px;
+                    line-height: 24px;
+                    box-sizing: border-box;
+                ">📱 Open Meeting in New Tab</a>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Responsive iframe with mobile detection
+            st.markdown("""
+            <script>
+            function adjustIframeHeight() {
+                var iframe = document.querySelector('iframe[src*="meet.jit.si"]');
+                if (iframe) {
+                    var isMobile = window.innerWidth < 768;
+                    iframe.style.height = isMobile ? '300px' : '500px';
+                }
+            }
+            adjustIframeHeight();
+            window.addEventListener('resize', adjustIframeHeight);
+            </script>
+            """, unsafe_allow_html=True)
+            
             st.components.v1.iframe(meet_url, height=500)
         # Option to clear meeting
         if st.button("End Meeting", type="secondary"):
@@ -1454,16 +1538,55 @@ def show_quick_meet():
         if room_name:
             st.success(f"Instructor has started a Quick Meet: {room_name}")
             meet_url = f"https://meet.jit.si/{room_name}"
-            if st.button("Join Meeting", type="primary"):
-                st.markdown(f"[Open Meeting in New Tab]({meet_url})", unsafe_allow_html=True)
+            
+            # Mobile-friendly join button
+            st.markdown(f"""
+            <div style="text-align: center; margin: 1rem 0;">
+                <a href="{meet_url}" target="_blank" style="
+                    display: inline-block;
+                    background-color: #FF6B6B;
+                    color: white;
+                    padding: 12px 24px;
+                    text-decoration: none;
+                    border-radius: 8px;
+                    font-weight: bold;
+                    font-size: 16px;
+                    min-height: 48px;
+                    line-height: 24px;
+                    box-sizing: border-box;
+                ">📱 Join Meeting</a>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            if st.button("Show Meeting Preview", type="secondary"):
+                # Responsive iframe with mobile detection
+                st.markdown("""
+                <script>
+                function adjustIframeHeight() {
+                    var iframe = document.querySelector('iframe[src*="meet.jit.si"]');
+                    if (iframe) {
+                        var isMobile = window.innerWidth < 768;
+                        iframe.style.height = isMobile ? '300px' : '500px';
+                    }
+                }
+                adjustIframeHeight();
+                window.addEventListener('resize', adjustIframeHeight);
+                </script>
+                """, unsafe_allow_html=True)
+                
                 st.components.v1.iframe(meet_url, height=500)
+            
+            # Enhanced mobile instructions
             st.markdown(
-                f"<div style='background:#fff3cd;padding:10px;border-radius:6px;border:1px solid #ffeeba;margin-top:10px;'>"
-                f"<b>📱 For the best experience on mobile devices, please use the <a href='{meet_url}' target='_blank'>Open Meeting in New Tab</a> link above.</b><br>"
-                "Embedded video may not work on all mobile browsers."
-                "</div>", unsafe_allow_html=True
+                f"""
+                <div style='background:#e3f2fd;padding:15px;border-radius:8px;border:1px solid #2196f3;margin-top:15px;'>
+                    <h4 style='margin:0 0 10px 0;color:#1976d2;'>📱 Mobile Instructions</h4>
+                    <p style='margin:5px 0;'><strong>For iPhone/iPad:</strong> Tap the "Join Meeting" button above for the best experience.</p>
+                    <p style='margin:5px 0;'><strong>For Android:</strong> The embedded video should work, but use the button above if you have issues.</p>
+                    <p style='margin:5px 0;'><strong>Note:</strong> Some mobile browsers may not support embedded video calls.</p>
+                </div>
+                """, unsafe_allow_html=True
             )
-            st.markdown("If the embed does not load, click the 'open in new tab' link above.")
         else:
             st.info("No active Quick Meet. Please wait for your instructor to start one.")
     else:
@@ -1505,28 +1628,39 @@ def show_student_class_enrollment():
             st.write("Browse and enroll in available classes:")
             
             for class_code, class_data in available_classes.items():
+                # Check if student is already enrolled
+                is_enrolled = student_username in class_data['enrolled_students']
+                
                 with st.container():
-                    col1, col2, col3 = st.columns([3, 2, 1])
+                    # Mobile-responsive layout
+                    st.markdown(f"""
+                    <div style="
+                        background: #f8f9fa;
+                        padding: 15px;
+                        border-radius: 8px;
+                        margin-bottom: 15px;
+                        border-left: 4px solid {'#28a745' if is_enrolled else '#FF6B6B'};
+                    ">
+                        <h4 style="margin: 0 0 10px 0; color: #333;">{class_data['class_name']} ({class_code})</h4>
+                        <p style="margin: 5px 0; color: #666;"><strong>Instructor:</strong> {class_data['instructor']}</p>
+                        <p style="margin: 5px 0; color: #666;"><strong>Schedule:</strong> {class_data['schedule']}</p>
+                        <p style="margin: 5px 0; color: #666;"><strong>Room:</strong> {class_data['room']}</p>
+                        <p style="margin: 5px 0; color: #666;"><strong>Students:</strong> {len(class_data['enrolled_students'])} enrolled</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # Mobile-friendly buttons
+                    col1, col2 = st.columns([1, 1])
                     
                     with col1:
-                        st.write(f"**{class_data['class_name']}** ({class_code})")
-                        st.write(f"Instructor: {class_data['instructor']}")
-                        st.write(f"Schedule: {class_data['schedule']}")
-                        st.write(f"Room: {class_data['room']}")
-                        st.write(f"Enrolled Students: {len(class_data['enrolled_students'])}")
+                        if is_enrolled:
+                            st.success("✅ You are enrolled")
+                        else:
+                            st.info("📚 Available for enrollment")
                     
                     with col2:
-                        # Check if student is already enrolled
-                        is_enrolled = student_username in class_data['enrolled_students']
-                        
-                        if is_enrolled:
-                            st.success("✅ Enrolled")
-                        else:
-                            st.info("Available")
-                    
-                    with col3:
                         if not is_enrolled:
-                            if st.button(f"Enroll", key=f"enroll_{class_code}"):
+                            if st.button(f"📝 Enroll", key=f"enroll_{class_code}", use_container_width=True):
                                 success, message = st.session_state.student_auth.enroll_in_class(student_username, class_code)
                                 if success:
                                     st.success(f"✅ {message}")
@@ -1552,15 +1686,13 @@ Class Details:
                                 else:
                                     st.error(f"❌ {message}")
                         else:
-                            if st.button(f"Unenroll", key=f"unenroll_{class_code}"):
+                            if st.button(f"❌ Unenroll", key=f"unenroll_{class_code}", use_container_width=True):
                                 success, message = st.session_state.student_auth.unenroll_from_class(student_username, class_code)
                                 if success:
                                     st.success(f"✅ {message}")
                                     st.rerun()
                                 else:
                                     st.error(f"❌ {message}")
-                    
-                    st.markdown("---")
         else:
             st.info("No classes are currently available for enrollment.")
     
@@ -1578,24 +1710,30 @@ Class Details:
                     class_data = available_classes[class_code]
                     
                     with st.container():
-                        col1, col2 = st.columns([4, 1])
+                        # Mobile-responsive enrolled class card
+                        st.markdown(f"""
+                        <div style="
+                            background: #e8f5e8;
+                            padding: 15px;
+                            border-radius: 8px;
+                            margin-bottom: 15px;
+                            border-left: 4px solid #28a745;
+                        ">
+                            <h4 style="margin: 0 0 10px 0; color: #333;">{class_data['class_name']} ({class_code})</h4>
+                            <p style="margin: 5px 0; color: #666;"><strong>Instructor:</strong> {class_data['instructor']}</p>
+                            <p style="margin: 5px 0; color: #666;"><strong>Schedule:</strong> {class_data['schedule']}</p>
+                            <p style="margin: 5px 0; color: #666;"><strong>Room:</strong> {class_data['room']}</p>
+                        </div>
+                        """, unsafe_allow_html=True)
                         
-                        with col1:
-                            st.write(f"**{class_data['class_name']}** ({class_code})")
-                            st.write(f"Instructor: {class_data['instructor']}")
-                            st.write(f"Schedule: {class_data['schedule']}")
-                            st.write(f"Room: {class_data['room']}")
-                        
-                        with col2:
-                            if st.button(f"Unenroll", key=f"unenroll_my_{class_code}"):
-                                success, message = st.session_state.student_auth.unenroll_from_class(student_username, class_code)
-                                if success:
-                                    st.success(f"✅ {message}")
-                                    st.rerun()
-                                else:
-                                    st.error(f"❌ {message}")
-                        
-                        st.markdown("---")
+                        # Mobile-friendly unenroll button
+                        if st.button(f"❌ Unenroll from {class_code}", key=f"unenroll_my_{class_code}", use_container_width=True):
+                            success, message = st.session_state.student_auth.unenroll_from_class(student_username, class_code)
+                            if success:
+                                st.success(f"✅ {message}")
+                                st.rerun()
+                            else:
+                                st.error(f"❌ {message}")
         else:
             st.info("You are not enrolled in any classes yet. Browse available classes to enroll!")
 
