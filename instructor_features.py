@@ -331,7 +331,7 @@ def show_instructor_class_attendance():
                         priority=2
                     )
     
-    with tab2:
+    with tab3:
         st.subheader("Attendance History")
         
         # Get attendance records for this class
@@ -351,7 +351,7 @@ def show_instructor_class_attendance():
         else:
             st.info("No attendance records available")
     
-    with tab3:
+    with tab4:
         st.subheader("Attendance Reports")
         
         col1, col2 = st.columns(2)
