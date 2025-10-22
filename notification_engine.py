@@ -64,6 +64,61 @@ class NotificationEngine:
             print(f"Error creating notification: {e}")
             return False
     
+    def create_targeted_notification(self, title: str, message: str, target_students: list, 
+                                   notification_type: str = 'info', priority: int = 1, 
+                                   scheduled_for: datetime = None, ai_enhanced: bool = False) -> bool:
+        """Create a targeted notification for specific students"""
+        try:
+            success_count = 0
+            
+            for student_username in target_students:
+                # Create personalized notification for each student
+                personalized_title = f"[Personal] {title}"
+                personalized_message = f"Hello {student_username},\n\n{message}"
+                
+                # AI enhancement if requested
+                if ai_enhanced:
+                    ai_result = self.ai.generate_smart_notification(personalized_message, notification_type)
+                    personalized_title = ai_result['title']
+                    personalized_message = ai_result['message']
+                    priority = ai_result['priority']
+                    sentiment_score = ai_result['sentiment_confidence']
+                else:
+                    # Basic sentiment analysis
+                    sentiment_analysis = self.ai.analyze_sentiment(personalized_message)
+                    sentiment_score = sentiment_analysis['confidence']
+                
+                # Add to database with student targeting
+                success = self.db.add_notification(
+                    title=personalized_title,
+                    message=personalized_message,
+                    notification_type=notification_type,
+                    priority=priority,
+                    scheduled_for=scheduled_for,
+                    sentiment_score=sentiment_score,
+                    ai_generated=ai_enhanced,
+                    target_student=student_username
+                )
+                
+                if success:
+                    success_count += 1
+                    # Add to queue for immediate sending if no schedule
+                    if not scheduled_for or scheduled_for <= datetime.now():
+                        self.notification_queue.append({
+                            'title': personalized_title,
+                            'message': personalized_message,
+                            'type': notification_type,
+                            'priority': priority,
+                            'timestamp': datetime.now(),
+                            'target_student': student_username
+                        })
+            
+            return success_count > 0
+                
+        except Exception as e:
+            print(f"Error creating targeted notification: {e}")
+            return False
+    
     def send_notification(self, notification_id: int, method: str = 'all') -> bool:
         """Send a specific notification"""
         try:

@@ -41,9 +41,17 @@ class DatabaseManager:
                 sent_at DATETIME,
                 status TEXT DEFAULT 'pending',
                 sentiment_score REAL,
-                ai_generated BOOLEAN DEFAULT FALSE
+                ai_generated BOOLEAN DEFAULT FALSE,
+                target_student TEXT
             )
         ''')
+        
+        # Add target_student column if it doesn't exist (for existing databases)
+        try:
+            cursor.execute('ALTER TABLE notifications ADD COLUMN target_student TEXT')
+        except sqlite3.OperationalError:
+            # Column already exists
+            pass
         
         # Create face encodings table
         cursor.execute('''
@@ -156,7 +164,8 @@ class DatabaseManager:
     
     def add_notification(self, title: str, message: str, notification_type: str = 'info', 
                        priority: int = 1, scheduled_for: datetime = None, 
-                       sentiment_score: float = None, ai_generated: bool = False) -> bool:
+                       sentiment_score: float = None, ai_generated: bool = False, 
+                       target_student: str = None) -> bool:
         """Add a new notification"""
         try:
             conn = sqlite3.connect(self.db_path)
@@ -166,10 +175,10 @@ class DatabaseManager:
             cursor.execute('''
                 INSERT INTO notifications 
                 (title, message, notification_type, priority, created_at, 
-                 scheduled_for, sentiment_score, ai_generated)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                 scheduled_for, sentiment_score, ai_generated, target_student)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (title, message, notification_type, priority, now, 
-                  scheduled_for, sentiment_score, ai_generated))
+                  scheduled_for, sentiment_score, ai_generated, target_student))
             
             conn.commit()
             conn.close()

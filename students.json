@@ -46,7 +46,7 @@
     "email": "sample@gmail.com",
     "role": "student",
     "created_at": "2025-10-04T07:30:56.044844",
-    "last_login": "2025-10-11T22:16:47.221653",
+    "last_login": "2025-10-22T03:56:18.791879",
     "permissions": [
       "read",
       "attendance",
@@ -60,7 +60,10 @@
       "year": "Freshman",
       "phone": "",
       "notifications_enabled": true
-    }
+    },
+    "enrolled_classes": [
+      "CS101"
+    ]
   },
   "itzzdave": {
     "password_hash": "cefc0101514c9aeca18688f90bb2f0ef:30f18bb6eed65f826977a0e12e2b43271410e1cd4b8698e67216d688a17bb16f",

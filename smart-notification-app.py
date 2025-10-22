@@ -286,8 +286,8 @@ def show_student_interface():
     if st.session_state.student_auth.has_student_permission(st.session_state.student_session_id, "read"):
         navigation_options.extend(["Notifications", "Reports"])
     
-    # Add AI Features and Quick Meet for students
-    navigation_options.extend(["AI Features", "Quick Meet"])
+    # Add AI Features, Class Enrollment, and Quick Meet for students
+    navigation_options.extend(["Class Enrollment", "AI Features", "Quick Meet"])
     
     page = st.sidebar.selectbox(
         "Choose a page",
@@ -304,6 +304,8 @@ def show_student_interface():
         show_student_notifications()
     elif page == "Reports":
         show_student_reports()
+    elif page == "Class Enrollment":
+        show_student_class_enrollment()
     elif page == "AI Features":
         show_ai_features()
     elif page == "Quick Meet":
@@ -1339,8 +1341,17 @@ def show_student_notifications():
         show_student_login()
         return
     
-    # Get notifications
-    notifications = st.session_state.db.get_notifications(limit=20)
+    # Get notifications (targeted to this student or general notifications)
+    all_notifications = st.session_state.db.get_notifications(limit=50)
+    student_username = student_info['username']
+    
+    # Filter notifications for this student
+    notifications = []
+    for notification in all_notifications:
+        # Include if targeted to this student or if it's a general notification
+        if (notification.get('target_student') == student_username or 
+            notification.get('target_student') is None):
+            notifications.append(notification)
     
     if notifications:
         st.subheader("Recent Notifications")
@@ -1457,6 +1468,136 @@ def show_quick_meet():
             st.info("No active Quick Meet. Please wait for your instructor to start one.")
     else:
         st.info("Quick Meet is available for instructors and students only.")
+
+def show_student_class_enrollment():
+    """Show student class enrollment interface"""
+    st.header("📚 Class Enrollment")
+    
+    # Ensure valid student session
+    session_id = st.session_state.get('student_session_id')
+    if not session_id:
+        st.error("No student session found. Please login again.")
+        show_student_login()
+        return
+    is_valid, _ = st.session_state.student_auth.verify_student_session(session_id)
+    if not is_valid:
+        st.error("Student session expired. Please login again.")
+        show_student_login()
+        return
+    
+    student_info = st.session_state.student_auth.get_student_info(session_id)
+    if not student_info:
+        st.error("Unable to load student information")
+        show_student_login()
+        return
+    
+    student_username = student_info['username']
+    
+    tab1, tab2 = st.tabs(["Available Classes", "My Enrolled Classes"])
+    
+    with tab1:
+        st.subheader("Available Classes")
+        
+        # Get all available classes
+        available_classes = st.session_state.student_auth.get_available_classes()
+        
+        if available_classes:
+            st.write("Browse and enroll in available classes:")
+            
+            for class_code, class_data in available_classes.items():
+                with st.container():
+                    col1, col2, col3 = st.columns([3, 2, 1])
+                    
+                    with col1:
+                        st.write(f"**{class_data['class_name']}** ({class_code})")
+                        st.write(f"Instructor: {class_data['instructor']}")
+                        st.write(f"Schedule: {class_data['schedule']}")
+                        st.write(f"Room: {class_data['room']}")
+                        st.write(f"Enrolled Students: {len(class_data['enrolled_students'])}")
+                    
+                    with col2:
+                        # Check if student is already enrolled
+                        is_enrolled = student_username in class_data['enrolled_students']
+                        
+                        if is_enrolled:
+                            st.success("✅ Enrolled")
+                        else:
+                            st.info("Available")
+                    
+                    with col3:
+                        if not is_enrolled:
+                            if st.button(f"Enroll", key=f"enroll_{class_code}"):
+                                success, message = st.session_state.student_auth.enroll_in_class(student_username, class_code)
+                                if success:
+                                    st.success(f"✅ {message}")
+                                    # Send notification to instructor
+                                    notification_title = f"Student Enrolled: {student_username}"
+                                    notification_message = f"""
+Student {student_username} has enrolled in your class!
+
+Class Details:
+• Class Code: {class_code}
+• Class Name: {class_data['class_name']}
+• Student: {student_username}
+• Enrollment Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+                                    """.strip()
+                                    
+                                    st.session_state.notification_engine.create_notification(
+                                        title=notification_title,
+                                        message=notification_message,
+                                        notification_type="enrollment",
+                                        priority=2
+                                    )
+                                    st.rerun()
+                                else:
+                                    st.error(f"❌ {message}")
+                        else:
+                            if st.button(f"Unenroll", key=f"unenroll_{class_code}"):
+                                success, message = st.session_state.student_auth.unenroll_from_class(student_username, class_code)
+                                if success:
+                                    st.success(f"✅ {message}")
+                                    st.rerun()
+                                else:
+                                    st.error(f"❌ {message}")
+                    
+                    st.markdown("---")
+        else:
+            st.info("No classes are currently available for enrollment.")
+    
+    with tab2:
+        st.subheader("My Enrolled Classes")
+        
+        # Get student's enrolled classes
+        enrolled_classes = st.session_state.student_auth.get_student_classes(student_username)
+        
+        if enrolled_classes:
+            st.write(f"You are enrolled in {len(enrolled_classes)} class(es):")
+            
+            for class_code in enrolled_classes:
+                if class_code in available_classes:
+                    class_data = available_classes[class_code]
+                    
+                    with st.container():
+                        col1, col2 = st.columns([4, 1])
+                        
+                        with col1:
+                            st.write(f"**{class_data['class_name']}** ({class_code})")
+                            st.write(f"Instructor: {class_data['instructor']}")
+                            st.write(f"Schedule: {class_data['schedule']}")
+                            st.write(f"Room: {class_data['room']}")
+                        
+                        with col2:
+                            if st.button(f"Unenroll", key=f"unenroll_my_{class_code}"):
+                                success, message = st.session_state.student_auth.unenroll_from_class(student_username, class_code)
+                                if success:
+                                    st.success(f"✅ {message}")
+                                    st.rerun()
+                                else:
+                                    st.error(f"❌ {message}")
+                        
+                        st.markdown("---")
+        else:
+            st.info("You are not enrolled in any classes yet. Browse available classes to enroll!")
 
 if __name__ == "__main__":
     main()

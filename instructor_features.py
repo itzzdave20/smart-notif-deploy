@@ -70,7 +70,9 @@ def show_instructor_class_management():
                 schedule = st.text_input("Schedule", placeholder="e.g., Mon/Wed/Fri 10:00-11:00")
                 room = st.text_input("Room", placeholder="e.g., CS-101")
             
-            enrolled_students = st.text_area("Enrolled Students (one per line)", placeholder="student1\nstudent2\nstudent3")
+            enrolled_students = st.text_area("Pre-enrolled Students (optional - students can enroll themselves)", 
+                                            placeholder="student1\nstudent2\nstudent3", 
+                                            help="Leave empty to let students enroll themselves. Students will be notified when the class is created.")
             
             if st.form_submit_button("Create Class", type="primary"):
                 if all([class_code, class_name, schedule, room]):
@@ -82,7 +84,31 @@ def show_instructor_class_management():
                     )
                     
                     if success:
+                        # Send notification to all students about the new class
+                        notification_title = f"New Class Available: {class_name}"
+                        notification_message = f"""
+A new class has been created by your instructor!
+
+Class Details:
+• Class Code: {class_code}
+• Class Name: {class_name}
+• Schedule: {schedule}
+• Room: {room}
+• Instructor: {instructor_info['username']}
+
+You can now enroll in this class through your student dashboard.
+                        """.strip()
+                        
+                        # Create notification for all students
+                        st.session_state.notification_engine.create_notification(
+                            title=notification_title,
+                            message=notification_message,
+                            notification_type="announcement",
+                            priority=3
+                        )
+                        
                         st.success(f"✅ {message}")
+                        st.info("📢 Students have been notified about the new class!")
                         st.rerun()
                     else:
                         st.error(f"❌ {message}")
@@ -365,13 +391,30 @@ def show_instructor_notifications():
                         success_count = 0
                         for class_code in target_classes:
                             class_data = instructor_classes[class_code]
-                            success = st.session_state.notification_engine.create_notification(
-                                title=f"[{class_code}] {title}",
-                                message=f"Class: {class_data['class_name']}\nStudents: {len(class_data['enrolled_students'])}\n\n{message}",
-                                notification_type=notification_type,
-                                priority=priority,
-                                scheduled_for=scheduled_time
-                            )
+                            
+                            # Get enrolled students for targeted notification
+                            enrolled_students = class_data['enrolled_students']
+                            
+                            if enrolled_students:
+                                # Send targeted notification to enrolled students
+                                success = st.session_state.notification_engine.create_targeted_notification(
+                                    title=f"[{class_code}] {title}",
+                                    message=f"Class: {class_data['class_name']}\n\n{message}",
+                                    target_students=enrolled_students,
+                                    notification_type=notification_type,
+                                    priority=priority,
+                                    scheduled_for=scheduled_time
+                                )
+                            else:
+                                # Send general notification if no students enrolled
+                                success = st.session_state.notification_engine.create_notification(
+                                    title=f"[{class_code}] {title}",
+                                    message=f"Class: {class_data['class_name']}\nStudents: {len(class_data['enrolled_students'])}\n\n{message}",
+                                    notification_type=notification_type,
+                                    priority=priority,
+                                    scheduled_for=scheduled_time
+                                )
+                            
                             if success:
                                 success_count += 1
                         

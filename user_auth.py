@@ -207,6 +207,64 @@ class StudentAuth:
             "majors": list(set(student["profile"].get("major", "Computer Science") for student in self.students.values())),
             "years": list(set(student["profile"].get("year", "Freshman") for student in self.students.values()))
         }
+    
+    def enroll_in_class(self, student_username, class_code):
+        """Enroll student in a class"""
+        # Load instructor auth to access classes
+        from instructor_auth import InstructorAuth
+        instructor_auth = InstructorAuth()
+        
+        # Check if class exists
+        if class_code not in instructor_auth.classes:
+            return False, "Class not found"
+        
+        # Check if student is already enrolled
+        if student_username in instructor_auth.classes[class_code]["enrolled_students"]:
+            return False, "Student already enrolled in this class"
+        
+        # Add student to class
+        success, message = instructor_auth.add_student_to_class(class_code, student_username)
+        
+        if success:
+            # Update student's enrolled classes
+            if "enrolled_classes" not in self.students[student_username]:
+                self.students[student_username]["enrolled_classes"] = []
+            
+            if class_code not in self.students[student_username]["enrolled_classes"]:
+                self.students[student_username]["enrolled_classes"].append(class_code)
+                self.save_students()
+        
+        return success, message
+    
+    def unenroll_from_class(self, student_username, class_code):
+        """Unenroll student from a class"""
+        # Load instructor auth to access classes
+        from instructor_auth import InstructorAuth
+        instructor_auth = InstructorAuth()
+        
+        # Remove student from class
+        success, message = instructor_auth.remove_student_from_class(class_code, student_username)
+        
+        if success:
+            # Update student's enrolled classes
+            if "enrolled_classes" in self.students[student_username]:
+                if class_code in self.students[student_username]["enrolled_classes"]:
+                    self.students[student_username]["enrolled_classes"].remove(class_code)
+                    self.save_students()
+        
+        return success, message
+    
+    def get_student_classes(self, student_username):
+        """Get classes that student is enrolled in"""
+        if "enrolled_classes" not in self.students[student_username]:
+            return []
+        return self.students[student_username]["enrolled_classes"]
+    
+    def get_available_classes(self):
+        """Get all available classes for enrollment"""
+        from instructor_auth import InstructorAuth
+        instructor_auth = InstructorAuth()
+        return instructor_auth.classes
 
 def show_student_login():
     """Display student login form"""
