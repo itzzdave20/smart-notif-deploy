@@ -130,5 +130,29 @@
     ],
     "created_at": "2025-10-08T02:42:18.254105",
     "expires_at": "2025-10-08T14:42:18.254105"
+  },
+  "1z_TcNUeNC1TYxxxLcephWsCBwnvuHiGGGUC-Da0FbA": {
+    "username": "instructor",
+    "role": "instructor",
+    "permissions": [
+      "class_management",
+      "attendance",
+      "notifications",
+      "reports"
+    ],
+    "created_at": "2025-10-22T07:37:12.944311",
+    "expires_at": "2025-10-22T19:37:12.944311"
+  },
+  "9F1_RGbHDsk3-HY5OtIYUBEZbxxobly-RSM3bHm9P88": {
+    "username": "instructor",
+    "role": "instructor",
+    "permissions": [
+      "class_management",
+      "attendance",
+      "notifications",
+      "reports"
+    ],
+    "created_at": "2025-10-22T07:40:19.952083",
+    "expires_at": "2025-10-22T19:40:19.952083"
   }
 }

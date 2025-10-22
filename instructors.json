@@ -4,7 +4,7 @@
     "email": "instructor@example.com",
     "role": "instructor",
     "created_at": "2025-10-04T04:50:51.802709",
-    "last_login": "2025-10-22T06:01:32.793962",
+    "last_login": "2025-10-22T07:40:19.951077",
     "permissions": [
       "class_management",
       "attendance",

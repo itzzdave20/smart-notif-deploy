@@ -242,7 +242,6 @@ def show_instructor_class_attendance():
                     st.image(img_buffer, caption=f"Scan to mark attendance for {selected_class}", width=300)
                 
                 # Show QR code info
-                from datetime import datetime
                 expiry_time = datetime.fromisoformat(qr_data['expiry'])
                 time_left = expiry_time - datetime.now()
                 
