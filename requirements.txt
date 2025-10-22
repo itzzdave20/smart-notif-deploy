@@ -6,3 +6,4 @@ plotly
 Pillow
 qrcode[pil]
 scikit-learn
+schedule
