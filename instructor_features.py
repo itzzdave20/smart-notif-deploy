@@ -191,10 +191,70 @@ def show_instructor_class_attendance():
     st.write(f"**Schedule:** {class_data['schedule']} | **Room:** {class_data['room']}")
     st.write(f"**Enrolled Students:** {len(class_data['enrolled_students'])}")
     
-    tab1, tab2, tab3 = st.tabs(["Take Attendance", "Attendance History", "Attendance Reports"])
+    tab1, tab2, tab3, tab4 = st.tabs(["QR Code Attendance", "Photo Attendance", "Attendance History", "Attendance Reports"])
     
     with tab1:
-        st.subheader("Mark Attendance")
+        st.subheader("QR Code Attendance")
+        st.info("📱 Generate a QR code for students to scan and mark their attendance")
+        
+        col1, col2 = st.columns([1, 1])
+        
+        with col1:
+            st.write("**QR Code Settings**")
+            valid_minutes = st.slider("QR Code Validity (minutes)", 5, 60, 30, 5)
+            
+            if st.button("Generate QR Code", type="primary"):
+                # Generate QR code
+                qr_img, qr_data, session_id = st.session_state.generate_attendance_qr(
+                    selected_class, instructor_info['username'], valid_minutes
+                )
+                
+                # Store QR data in session state
+                st.session_state.current_qr_data = qr_data
+                st.session_state.current_qr_session = session_id
+                
+                st.success(f"✅ QR Code generated! Valid for {valid_minutes} minutes")
+        
+        with col2:
+            if 'current_qr_data' in st.session_state:
+                qr_data = st.session_state.current_qr_data
+                
+                # Display QR code
+                st.write("**Current QR Code**")
+                qr_img, _, _ = st.session_state.generate_attendance_qr(
+                    selected_class, instructor_info['username'], valid_minutes
+                )
+                
+                # Convert PIL image to bytes for display
+                import io
+                img_buffer = io.BytesIO()
+                qr_img.save(img_buffer, format='PNG')
+                img_buffer.seek(0)
+                
+                st.image(img_buffer, caption=f"Scan to mark attendance for {selected_class}", width=300)
+                
+                # Show QR code info
+                from datetime import datetime
+                expiry_time = datetime.fromisoformat(qr_data['expiry'])
+                time_left = expiry_time - datetime.now()
+                
+                if time_left.total_seconds() > 0:
+                    minutes_left = int(time_left.total_seconds() / 60)
+                    seconds_left = int(time_left.total_seconds() % 60)
+                    st.info(f"⏰ QR Code expires in {minutes_left}m {seconds_left}s")
+                else:
+                    st.error("❌ QR Code has expired")
+                
+                # Show enrolled students count
+                st.write(f"**Enrolled Students:** {len(class_data['enrolled_students'])}")
+                
+                # Refresh button
+                if st.button("🔄 Refresh QR Code"):
+                    st.rerun()
+    
+    with tab2:
+        st.subheader("Photo Attendance")
+        st.info("📸 Upload a class photo for face recognition attendance")
         
         col1, col2 = st.columns([1, 1])
         

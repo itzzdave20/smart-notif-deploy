@@ -101,6 +101,34 @@ class DatabaseManager:
             print(f"Error adding attendance: {e}")
             return False
     
+    def add_attendance_record(self, attendance_data: Dict) -> bool:
+        """Add QR code attendance record"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            now = datetime.now()
+            today = date.today()
+            
+            cursor.execute('''
+                INSERT INTO attendance (person_name, timestamp, date, confidence, image_path, status)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (
+                attendance_data["student_username"], 
+                now, 
+                today, 
+                1.0, 
+                f"qr_session_{attendance_data['session_id']}", 
+                "present"
+            ))
+            
+            conn.commit()
+            conn.close()
+            return True
+        except Exception as e:
+            print(f"Error adding attendance record: {e}")
+            return False
+    
     def get_attendance_today(self) -> List[Dict]:
         """Get today's attendance records"""
         conn = sqlite3.connect(self.db_path)

@@ -11,6 +11,9 @@ from PIL import Image
 import time
 import json
 import os
+import qrcode
+import hashlib
+import uuid
 
 # Import our custom modules
 from attendance_system import AttendanceSystem
@@ -154,6 +157,126 @@ def show_browser_notification(title, body):
     )
     st.markdown(script, unsafe_allow_html=True)
 
+# QR Code Functions
+def generate_qr_code(data, size=200):
+    """Generate a QR code image"""
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(data)
+    qr.make(fit=True)
+    
+    img = qr.make_image(fill_color="black", back_color="white")
+    img = img.resize((size, size), Image.Resampling.LANCZOS)
+    return img
+
+def generate_attendance_qr(class_code, instructor_username, valid_minutes=30):
+    """Generate QR code for class attendance"""
+    # Create unique attendance session
+    session_id = str(uuid.uuid4())
+    timestamp = datetime.now()
+    expiry_time = timestamp + timedelta(minutes=valid_minutes)
+    
+    # Create QR data
+    qr_data = {
+        "type": "attendance",
+        "class_code": class_code,
+        "instructor": instructor_username,
+        "session_id": session_id,
+        "timestamp": timestamp.isoformat(),
+        "expiry": expiry_time.isoformat(),
+        "valid_minutes": valid_minutes
+    }
+    
+    # Convert to JSON string
+    qr_string = json.dumps(qr_data)
+    
+    # Generate QR code
+    qr_img = generate_qr_code(qr_string, size=300)
+    
+    return qr_img, qr_data, session_id
+
+def validate_qr_code(qr_data):
+    """Validate QR code data"""
+    try:
+        # Check if QR data is valid JSON
+        if isinstance(qr_data, str):
+            data = json.loads(qr_data)
+        else:
+            data = qr_data
+        
+        # Check if it's an attendance QR code
+        if data.get("type") != "attendance":
+            return False, "Invalid QR code type"
+        
+        # Check expiry
+        expiry_time = datetime.fromisoformat(data["expiry"])
+        if datetime.now() > expiry_time:
+            return False, "QR code has expired"
+        
+        return True, data
+        
+    except Exception as e:
+        return False, f"Invalid QR code: {str(e)}"
+
+def mark_attendance_from_qr(student_username, qr_data):
+    """Mark attendance for student using QR code data"""
+    try:
+        class_code = qr_data["class_code"]
+        instructor = qr_data["instructor"]
+        session_id = qr_data["session_id"]
+        
+        # Check if student is enrolled in the class
+        from instructor_auth import InstructorAuth
+        instructor_auth = InstructorAuth()
+        
+        if class_code not in instructor_auth.classes:
+            return False, "Class not found"
+        
+        if student_username not in instructor_auth.classes[class_code]["enrolled_students"]:
+            return False, "You are not enrolled in this class"
+        
+        # Mark attendance in the system
+        attendance_record = {
+            "student_username": student_username,
+            "class_code": class_code,
+            "instructor": instructor,
+            "session_id": session_id,
+            "timestamp": datetime.now().isoformat(),
+            "method": "qr_code"
+        }
+        
+        # Save to database
+        success = st.session_state.db.add_attendance_record(attendance_record)
+        
+        if success:
+            # Send notification to instructor
+            notification_title = f"Attendance Marked: {student_username}"
+            notification_message = f"""
+Student {student_username} has marked attendance via QR code!
+
+Class: {class_code}
+Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+Method: QR Code Scan
+            """.strip()
+            
+            st.session_state.notification_engine.create_notification(
+                title=notification_title,
+                message=notification_message,
+                notification_type="attendance",
+                priority=2
+            )
+            
+            return True, "Attendance marked successfully!"
+        else:
+            return False, "Failed to save attendance record"
+            
+    except Exception as e:
+        return False, f"Error marking attendance: {str(e)}"
+
 # Custom CSS
 st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
 
@@ -178,6 +301,10 @@ if 'instructor_auth' not in st.session_state:
     st.session_state.instructor_auth = InstructorAuth()
 if 'instructor_page' not in st.session_state:
     st.session_state.instructor_page = "dashboard"
+if 'qr_functions' not in st.session_state:
+    st.session_state.generate_attendance_qr = generate_attendance_qr
+    st.session_state.validate_qr_code = validate_qr_code
+    st.session_state.mark_attendance_from_qr = mark_attendance_from_qr
 
 def get_quick_meet_room():
     room_file = os.path.join('notifications', 'quick_meet_room.json')
@@ -1325,31 +1452,68 @@ def show_student_attendance():
     with col1:
         st.subheader("Mark Attendance")
         
-        # Use a unique key for this uploader
-        uploaded_file = st.file_uploader("Upload Photo for Attendance", type=['jpg', 'jpeg', 'png'], key="student_attendance_photo_main_uploader")
+        # QR Code Scanner Interface
+        st.info("📱 Scan the QR code displayed by your instructor to mark attendance")
         
-        if st.button("Mark Attendance", type="primary", key="mark_attendance_btn_main_uploader"):
-            if uploaded_file:
-                image_bytes = uploaded_file.read()
+        # QR Code input field
+        qr_code_data = st.text_area(
+            "QR Code Data", 
+            placeholder="Paste the QR code data here or scan with your camera",
+            height=100,
+            help="You can scan the QR code with your phone's camera app and copy the text, or use a QR scanner app"
+        )
+        
+        if st.button("Mark Attendance", type="primary", key="mark_attendance_qr"):
+            if qr_code_data.strip():
+                # Validate QR code
+                is_valid, qr_data = st.session_state.validate_qr_code(qr_code_data.strip())
                 
-                with st.spinner("Processing attendance..."):
-                    result = st.session_state.attendance_system.mark_attendance(image_bytes=image_bytes)
-                
-                if result['success']:
-                    st.success("✅ Attendance marked successfully!")
+                if is_valid:
+                    # Mark attendance
+                    success, message = st.session_state.mark_attendance_from_qr(student_info['username'], qr_data)
                     
-                    # Show recognized faces
-                    if result['recognized_faces']:
-                        st.write("**Recognized:**")
-                        for face in result['recognized_faces']:
-                            st.write(f"• {face['name']} (Confidence: {face['confidence']:.2f})")
-                    
-                    # Create notification
-                    st.session_state.notification_engine.create_attendance_notification(result)
+                    if success:
+                        st.success(f"✅ {message}")
+                        
+                        # Show class information
+                        st.info(f"""
+                        **Attendance Details:**
+                        - Class: {qr_data['class_code']}
+                        - Instructor: {qr_data['instructor']}
+                        - Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+                        - Method: QR Code Scan
+                        """)
+                    else:
+                        st.error(f"❌ {message}")
                 else:
-                    st.error("❌ Failed to mark attendance")
+                    st.error(f"❌ {qr_data}")
             else:
-                st.warning("Please upload a photo")
+                st.warning("Please enter QR code data")
+        
+        # Alternative: Camera upload for QR code scanning
+        st.markdown("---")
+        st.write("**Alternative: Upload QR Code Image**")
+        uploaded_qr = st.file_uploader("Upload QR Code Image", type=['jpg', 'jpeg', 'png'], key="qr_code_image")
+        
+        if uploaded_qr:
+            st.image(uploaded_qr, caption="Uploaded QR Code", width=200)
+            st.info("📱 Please scan this QR code with your phone's camera app to get the text data, then paste it above.")
+        
+        # Mobile QR Scanner Instructions
+        st.markdown("---")
+        st.markdown("""
+        <div style="background:#e3f2fd;padding:15px;border-radius:8px;border:1px solid #2196f3;">
+            <h4 style="margin:0 0 10px 0;color:#1976d2;">📱 How to Scan QR Code</h4>
+            <ol style="margin:5px 0;padding-left:20px;">
+                <li>Open your phone's camera app</li>
+                <li>Point the camera at the QR code displayed by your instructor</li>
+                <li>Tap the notification that appears</li>
+                <li>Copy the text and paste it in the field above</li>
+                <li>Click "Mark Attendance"</li>
+            </ol>
+            <p style="margin:5px 0;"><strong>Note:</strong> QR codes expire after 30 minutes for security.</p>
+        </div>
+        """, unsafe_allow_html=True)
     
     with col2:
         st.subheader("My Attendance Records")
