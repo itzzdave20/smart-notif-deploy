@@ -5,3 +5,4 @@ pandas
 plotly
 Pillow
 qrcode[pil]
+scikit-learn
