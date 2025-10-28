@@ -1,0 +1,116 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Student</title></head>
+<body>
+  <h2>Student</h2>
+  <div id="status" style="color:#666;margin-bottom:8px;"></div>
+  <div id="log"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    const log = document.getElementById('log');
+    const status = document.getElementById('status');
+
+    // Request notification permission on load
+    async function ensureNotificationPermission() {
+      if (!('Notification' in window)) {
+        status.textContent = 'This browser does not support desktop notifications.';
+        return;
+      }
+      if (Notification.permission === 'default') {
+        try {
+          const p = await Notification.requestPermission();
+          status.textContent = p === 'granted' ? 'Notifications enabled' : 'Notifications not enabled';
+        } catch (e) {
+          status.textContent = 'Notification permission request failed';
+        }
+      } else {
+        status.textContent = Notification.permission === 'granted' ? 'Notifications enabled' : 'Notifications not enabled';
+      }
+    }
+    ensureNotificationPermission();
+
+    socket.on('notification', (data) => {
+      const { title, message, downloadUrl } = data;
+      const absoluteUrl = downloadUrl ? (downloadUrl.startsWith('http') ? downloadUrl : `${location.origin}${downloadUrl}`) : null;
+
+      // show browser notification (if allowed)
+      if (window.Notification && Notification.permission === 'granted') {
+        const opts = {
+          body: message || '',
+          data: { url: absoluteUrl },
+          requireInteraction: true // keeps the notification visible until the user acts
+        };
+        try {
+          const n = new Notification(title || 'Notification', opts);
+          n.onclick = (ev) => {
+            ev.preventDefault();
+            if (n.data && n.data.url) window.open(n.data.url, '_blank');
+            else window.focus();
+          };
+        } catch (err) {
+          console.error('Notification error', err);
+        }
+      }
+
+      // add visible download card in page
+      const container = document.createElement('div');
+      container.style.border = '1px solid #ccc';
+      container.style.margin = '8px';
+      container.style.padding = '8px';
+      container.style.background = '#fafafa';
+
+      const h = document.createElement('div');
+      h.innerHTML = `<strong>${title || ''}</strong>`;
+      container.appendChild(h);
+
+      const p = document.createElement('div');
+      p.textContent = message || '';
+      p.style.margin = '6px 0';
+      container.appendChild(p);
+
+      if (absoluteUrl) {
+        const a = document.createElement('a');
+        a.href = absoluteUrl;
+        a.textContent = 'Open / Download file';
+        a.target = '_blank';
+        // set download filename where possible
+        try {
+          const name = decodeURIComponent((absoluteUrl.split('/').pop() || '').split('?')[0]);
+          if (name) a.setAttribute('download', name);
+        } catch {}
+        a.style.display = 'inline-block';
+        a.style.marginRight = '12px';
+        container.appendChild(a);
+
+        // optional quick-download button that fetches and forces save (safer fallback)
+        const dlBtn = document.createElement('button');
+        dlBtn.textContent = 'Quick download';
+        dlBtn.onclick = async () => {
+          try {
+            const res = await fetch(absoluteUrl, { credentials: 'same-origin' });
+            if (!res.ok) throw new Error('Fetch failed');
+            const blob = await res.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            const tmp = document.createElement('a');
+            tmp.href = blobUrl;
+            const filename = decodeURIComponent((absoluteUrl.split('/').pop() || '').split('?')[0]) || 'file';
+            tmp.download = filename;
+            document.body.appendChild(tmp);
+            tmp.click();
+            tmp.remove();
+            URL.revokeObjectURL(blobUrl);
+          } catch (err) {
+            alert('Download failed, opening in new tab instead.');
+            window.open(absoluteUrl, '_blank');
+          }
+        };
+        container.appendChild(dlBtn);
+      }
+
+      log.prepend(container);
+    });
+  </script>
+</body>
+</html>

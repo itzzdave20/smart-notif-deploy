@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Instructor</title></head>
+<body>
+  <h2>Send Notification</h2>
+  <form id="notifyForm">
+    <input name="title" placeholder="Title" required /><br/>
+    <textarea name="message" placeholder="Message" required></textarea><br/>
+    <input name="emails" placeholder="Student emails (comma separated)" /><br/>
+    <input type="file" id="file" name="file" /><br/>
+    <button type="submit">Send</button>
+  </form>
+
+  <script>
+    const form = document.getElementById('notifyForm');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(form);
+      const emails = form.emails.value ? form.emails.value.split(',').map(s=>s.trim()) : [];
+      let downloadUrl = '';
+
+      // If file selected, upload first
+      const fileInput = document.getElementById('file');
+      if (fileInput.files.length) {
+        const up = new FormData();
+        up.append('file', fileInput.files[0]);
+        const r = await fetch('/upload', { method: 'POST', body: up });
+        const j = await r.json();
+        if (j.url) downloadUrl = j.url;
+      }
+
+      const payload = {
+        title: form.title.value,
+        message: form.message.value,
+        downloadUrl,
+        emails
+      };
+
+      await fetch('/send-notification', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+      });
+
+      alert('Notification sent');
+      form.reset();
+    });
+  </script>
+</body>
+</html>
