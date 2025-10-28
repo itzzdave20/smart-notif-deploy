@@ -40,7 +40,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Enhanced mobile-friendly viewport and device detection
+# Enhanced mobile-friendly viewport and device detection with PWA support
 st.markdown(
     """
     <script>
@@ -56,6 +56,102 @@ st.markdown(
         } else {
           // Update existing viewport for better mobile support
           existing.content = 'width=device-width, initial-scale=1, maximum-scale=5, minimum-scale=1, user-scalable=yes, viewport-fit=cover';
+        }
+        
+        // PWA Support - Register Service Worker with Offline Support
+        if ('serviceWorker' in navigator) {
+          window.addEventListener('load', function() {
+            navigator.serviceWorker.register('/sw.js')
+              .then(function(registration) {
+                console.log('ServiceWorker registration successful');
+                
+                // Set up offline manager
+                if (typeof OfflineManager !== 'undefined') {
+                  window.offlineManager = new OfflineManager();
+                }
+              })
+              .catch(function(err) {
+                console.log('ServiceWorker registration failed: ', err);
+              });
+          });
+        }
+        
+        // Offline/Online Status Management
+        function updateConnectionStatus() {
+          const isOnline = navigator.onLine;
+          const statusElement = document.getElementById('connection-status');
+          
+          if (statusElement) {
+            statusElement.textContent = isOnline ? '🟢 Online' : '🔴 Offline';
+            statusElement.className = isOnline ? 'online' : 'offline';
+          }
+          
+          // Show/hide offline indicators
+          const offlineIndicators = document.querySelectorAll('.offline-indicator');
+          offlineIndicators.forEach(indicator => {
+            indicator.style.display = isOnline ? 'none' : 'block';
+          });
+          
+          // Show sync button when offline
+          const syncButtons = document.querySelectorAll('.sync-button');
+          syncButtons.forEach(button => {
+            button.style.display = isOnline ? 'none' : 'inline-block';
+          });
+          
+          // Trigger sync when back online
+          if (isOnline && window.offlineManager) {
+            window.offlineManager.syncOfflineData();
+          }
+        }
+        
+        // Listen for online/offline events
+        window.addEventListener('online', updateConnectionStatus);
+        window.addEventListener('offline', updateConnectionStatus);
+        
+        // Initial status check
+        updateConnectionStatus();
+        
+        // PWA Install Prompt
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+          e.preventDefault();
+          deferredPrompt = e;
+          // Show install button or banner
+          showInstallButton();
+        });
+        
+        function showInstallButton() {
+          // Create install button
+          var installBtn = document.createElement('button');
+          installBtn.innerHTML = '📱 Install App';
+          installBtn.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #FF6B6B;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+            z-index: 1000;
+            cursor: pointer;
+            transition: all 0.3s ease;
+          `;
+          
+          installBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+              deferredPrompt.prompt();
+              const { outcome } = await deferredPrompt.userChoice;
+              console.log(`User response to the install prompt: ${outcome}`);
+              deferredPrompt = null;
+              installBtn.remove();
+            }
+          });
+          
+          document.body.appendChild(installBtn);
         }
         
         // Add mobile-specific CSS classes
@@ -298,6 +394,19 @@ Method: QR Code Scan
     except Exception as e:
         return False, f"Error marking attendance: {str(e)}"
 
+# PWA Manifest and Meta Tags with Offline Support
+st.markdown("""
+<link rel="manifest" href="manifest.json">
+<script src="offline-manager.js"></script>
+<meta name="theme-color" content="#FF6B6B">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Chat Ping">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="msapplication-TileColor" content="#FF6B6B">
+<meta name="msapplication-tap-highlight" content="no">
+""", unsafe_allow_html=True)
+
 # Custom CSS
 st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
 
@@ -354,11 +463,30 @@ def clear_quick_meet_room():
         os.remove(room_file)
 
 def main():
+    # Connection Status Indicator
+    st.markdown("""
+    <div id="connection-status" style="
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        z-index: 1000;
+        background: #4CAF50;
+        color: white;
+    ">🟢 Online</div>
+    """, unsafe_allow_html=True)
+    
     st.markdown(
         """
         <div style="text-align: center;">
             <h1 class="main-header">🔔 Chat Ping</h1>
             <p>Smart Notification App</p>
+            <div class="offline-indicator" style="display: none; background: #ffeb3b; color: #333; padding: 8px; border-radius: 8px; margin: 10px auto; max-width: 300px;">
+                📱 Working Offline - Data will sync when online
+            </div>
         </div>
         """,
         unsafe_allow_html=True
@@ -420,6 +548,25 @@ def show_admin_interface():
     
     # Sidebar navigation
     st.sidebar.title("Navigation")
+    
+    # Offline Sync Button
+    st.sidebar.markdown("---")
+    col1, col2 = st.sidebar.columns([1, 1])
+    with col1:
+        if st.button("🔄 Sync", help="Sync offline data"):
+            st.markdown("""
+            <script>
+            if (window.offlineManager) {
+                window.offlineManager.manualSync();
+            }
+            </script>
+            """, unsafe_allow_html=True)
+    with col2:
+        st.markdown("""
+        <div id="sync-status" style="font-size: 12px; color: #666;">
+            <span id="sync-indicator">🟢</span> <span id="sync-text">Online</span>
+        </div>
+        """, unsafe_allow_html=True)
     
     # Add admin section to navigation
     navigation_options = ["Dashboard", "Attendance Management", "Smart Notifications", "AI Features", "Analytics", "Settings", "🛡️ Admin Panel"]
@@ -721,35 +868,50 @@ def show_attendance_management():
         with col1:
             uploaded_attendance = st.file_uploader("Upload Photo for Attendance", type=['jpg', 'jpeg', 'png'], key="admin_attendance_photo")
             
-            if st.button("Mark Attendance", type="primary"):
-                if uploaded_attendance:
-                    image_bytes = uploaded_attendance.read()
+        if st.button("Mark Attendance", type="primary"):
+            if uploaded_attendance:
+                image_bytes = uploaded_attendance.read()
+                
+                with st.spinner("Processing attendance..."):
+                    result = st.session_state.attendance_system.mark_attendance(image_bytes=image_bytes)
+                
+                if result['success']:
+                    st.success("✅ Attendance marked successfully!")
                     
-                    with st.spinner("Processing attendance..."):
-                        result = st.session_state.attendance_system.mark_attendance(image_bytes=image_bytes)
+                    # Show recognized faces
+                    if result['recognized_faces']:
+                        st.write("**Recognized People:**")
+                        for face in result['recognized_faces']:
+                            st.write(f"• {face['name']} (Confidence: {face['confidence']:.2f})")
                     
-                    if result['success']:
-                        st.success("✅ Attendance marked successfully!")
-                        
-                        # Show recognized faces
-                        if result['recognized_faces']:
-                            st.write("**Recognized People:**")
-                            for face in result['recognized_faces']:
-                                st.write(f"• {face['name']} (Confidence: {face['confidence']:.2f})")
-                        
-                        # Show unknown faces
-                        if result['unknown_faces']:
-                            st.warning(f"⚠️ {len(result['unknown_faces'])} unknown faces detected")
-                        
-                        # Create notification
-                        st.session_state.notification_engine.create_attendance_notification(result)
-                        
-                    else:
-                        st.error("❌ Failed to mark attendance")
-                        if 'error' in result:
-                            st.error(f"Error: {result['error']}")
+                    # Show unknown faces
+                    if result['unknown_faces']:
+                        st.warning(f"⚠️ {len(result['unknown_faces'])} unknown faces detected")
+                    
+                    # Create notification
+                    st.session_state.notification_engine.create_attendance_notification(result)
+                    
+                    # Store offline if needed
+                    st.markdown("""
+                    <script>
+                    if (!navigator.onLine && window.offlineManager) {
+                        const offlineData = {
+                            type: 'attendance',
+                            data: """ + str(result).replace("'", '"') + """,
+                            timestamp: new Date().toISOString()
+                        };
+                        window.offlineManager.storeOfflineData('attendance', offlineData);
+                        console.log('Attendance data stored offline');
+                    }
+                    </script>
+                    """, unsafe_allow_html=True)
+                    
                 else:
-                    st.warning("Please upload a photo")
+                    st.error("❌ Failed to mark attendance")
+                    if 'error' in result:
+                        st.error(f"Error: {result['error']}")
+            else:
+                st.warning("Please upload a photo")
         
         with col2:
             st.info("""
@@ -888,6 +1050,27 @@ def show_notifications():
                         show_browser_notification(title, message)
                         if ai_enhanced:
                             st.info("🤖 AI has enhanced your notification content")
+                        
+                        # Store offline if needed
+                        st.markdown("""
+                        <script>
+                        if (!navigator.onLine && window.offlineManager) {
+                            const offlineData = {
+                                type: 'notification',
+                                data: {
+                                    title: '""" + title + """',
+                                    message: '""" + message + """',
+                                    notification_type: '""" + notification_type + """',
+                                    priority: """ + str(priority) + """,
+                                    ai_enhanced: """ + str(ai_enhanced).lower() + """
+                                },
+                                timestamp: new Date().toISOString()
+                            };
+                            window.offlineManager.storeOfflineData('notifications', offlineData);
+                            console.log('Notification stored offline');
+                        }
+                        </script>
+                        """, unsafe_allow_html=True)
                     else:
                         st.error("❌ Failed to create notification")
                 else:
