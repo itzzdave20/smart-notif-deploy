@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline - Chat Ping</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#FF6B6B">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #FF6B6B, #4ECDC4);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .offline-container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+        
+        .offline-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 28px;
+        }
+        
+        p {
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        
+        .offline-features {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            text-align: left;
+        }
+        
+        .offline-features h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .feature-list {
+            list-style: none;
+        }
+        
+        .feature-list li {
+            color: #666;
+            margin-bottom: 8px;
+            padding-left: 20px;
+            position: relative;
+        }
+        
+        .feature-list li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 15px;
+            flex-direction: column;
+        }
+        
+        .btn {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-primary {
+            background: #FF6B6B;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #e55a5a;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #333;
+            border: 2px solid #e9ecef;
+        }
+        
+        .btn-secondary:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+        }
+        
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            z-index: 1000;
+        }
+        
+        .connection-status.online {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .connection-status.offline {
+            background: #F44336;
+            color: white;
+        }
+        
+        .sync-indicator {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: #2196F3;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 14px;
+            z-index: 1000;
+            display: none;
+        }
+        
+        @media (max-width: 480px) {
+            .offline-container {
+                padding: 30px 20px;
+            }
+            
+            .offline-icon {
+                font-size: 60px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            .buttons {
+                gap: 10px;
+            }
+            
+            .btn {
+                padding: 12px 20px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="connection-status offline" id="connection-status">
+        🔴 Offline
+    </div>
+    
+    <div class="sync-indicator" id="sync-indicator">
+        🔄 Syncing data...
+    </div>
+    
+    <div class="offline-container">
+        <div class="offline-icon">📱</div>
+        <h1>You're Offline</h1>
+        <p>Don't worry! Chat Ping works offline too. Your data will automatically sync when you're back online.</p>
+        
+        <div class="offline-features">
+            <h3>Available Offline:</h3>
+            <ul class="feature-list">
+                <li>Mark attendance (will sync later)</li>
+                <li>View cached notifications</li>
+                <li>Access your profile</li>
+                <li>Browse class information</li>
+                <li>Use AI features</li>
+            </ul>
+        </div>
+        
+        <div class="buttons">
+            <button class="btn btn-primary" onclick="retryConnection()">
+                🔄 Try Again
+            </button>
+            <button class="btn btn-secondary" onclick="goToCachedContent()">
+                📱 Continue Offline
+            </button>
+        </div>
+    </div>
+    
+    <script>
+        // Connection status management
+        function updateConnectionStatus() {
+            const statusElement = document.getElementById('connection-status');
+            const syncIndicator = document.getElementById('sync-indicator');
+            
+            if (navigator.onLine) {
+                statusElement.textContent = '🟢 Online';
+                statusElement.className = 'connection-status online';
+                syncIndicator.style.display = 'block';
+                syncIndicator.textContent = '🔄 Syncing data...';
+                
+                // Hide sync indicator after 3 seconds
+                setTimeout(() => {
+                    syncIndicator.style.display = 'none';
+                }, 3000);
+                
+                // Redirect to main app after sync
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 2000);
+            } else {
+                statusElement.textContent = '🔴 Offline';
+                statusElement.className = 'connection-status offline';
+                syncIndicator.style.display = 'none';
+            }
+        }
+        
+        // Retry connection
+        function retryConnection() {
+            if (navigator.onLine) {
+                window.location.href = '/';
+            } else {
+                // Show retry message
+                const retryBtn = document.querySelector('.btn-primary');
+                const originalText = retryBtn.textContent;
+                retryBtn.textContent = '❌ Still Offline';
+                retryBtn.style.background = '#F44336';
+                
+                setTimeout(() => {
+                    retryBtn.textContent = originalText;
+                    retryBtn.style.background = '#FF6B6B';
+                }, 2000);
+            }
+        }
+        
+        // Go to cached content
+        function goToCachedContent() {
+            // Try to load cached version of the main app
+            if ('caches' in window) {
+                caches.match('/').then(response => {
+                    if (response) {
+                        window.location.href = '/';
+                    } else {
+                        alert('No cached content available. Please check your connection.');
+                    }
+                });
+            } else {
+                alert('Your browser doesn\'t support offline features.');
+            }
+        }
+        
+        // Listen for online/offline events
+        window.addEventListener('online', updateConnectionStatus);
+        window.addEventListener('offline', updateConnectionStatus);
+        
+        // Check connection status on load
+        updateConnectionStatus();
+        
+        // Periodic connection check
+        setInterval(updateConnectionStatus, 5000);
+        
+        // Service Worker registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js')
+                .then(registration => {
+                    console.log('Service Worker registered successfully');
+                })
+                .catch(error => {
+                    console.log('Service Worker registration failed:', error);
+                });
+        }
+    </script>
+</body>
+</html>
+
