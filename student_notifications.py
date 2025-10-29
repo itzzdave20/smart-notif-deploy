@@ -1,4 +1,9 @@
 import time
+import os
+import json
+from datetime import datetime
+from instructor_auth import InstructorAuth  # Assuming this is where InstructorAuth is defined
+from email_service import send_email_notification  # Assuming this is the correct import for the email function
 
 def show_student_notifications():
     """Show student notifications interface"""
@@ -51,3 +56,80 @@ def show_student_notifications():
             st.session_state["last_seen_notification"] = last_seen_notification
 
         time.sleep(5)  # Poll every 5 seconds
+
+def get_student_email(self, student_username):
+    """Retrieve the email address of a student"""
+    student_emails = {
+        "student1": "student1@example.com",
+        "student2": "student2@example.com",
+        "student3": "student3@example.com",
+        "student4": "student4@example.com",
+        "student5": "student5@example.com",
+        "student6": "student6@example.com",
+    }
+    return student_emails.get(student_username, None)
+
+def send_notification_to_students(class_code, title, message):
+    """Send a notification to all students in a class and email them"""
+    auth = InstructorAuth()
+    if class_code not in auth.classes:
+        return False, "Class not found"
+
+    class_data = auth.classes[class_code]
+    students = class_data["enrolled_students"]
+
+    # Create notification object
+    notification = {
+        "title": title,
+        "message": message,
+        "class_code": class_code,
+        "timestamp": datetime.now().isoformat(),
+        "students": students,
+    }
+
+    # Save notification to a shared file
+    notifications_file = "notifications.json"
+    if os.path.exists(notifications_file):
+        with open(notifications_file, "r") as f:
+            notifications = json.load(f)
+    else:
+        notifications = []
+
+    notifications.append(notification)
+
+    with open(notifications_file, "w") as f:
+        json.dump(notifications, f, indent=2)
+
+    # Send email notifications to students
+    for student in students:
+        student_email = auth.get_student_email(student)  # Fetch student email from the database
+        if not student_email:
+            print(f"Error: No email found for student {student}")
+            continue
+
+        email_subject = f"New Notification: {title}"
+        email_body = f"""
+        Dear {student},
+
+        You have a new notification from your instructor:
+
+        Title: {title}
+        Message: {message}
+        Class Code: {class_code}
+
+        Best regards,
+        Smart Notification App
+        """
+        success, email_message = send_email_notification(student_email, email_subject, email_body)
+        if not success:
+            print(f"Failed to send email to {student_email}: {email_message}")
+
+    return True, "Notification sent successfully"
+
+# Test email sending
+success, message = send_email_notification(
+    to_email="test_student@example.com",
+    subject="Test Notification",
+    body="This is a test email from the Smart Notification App."
+)
+print(success, message)
