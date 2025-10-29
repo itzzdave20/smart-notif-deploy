@@ -279,6 +279,39 @@ class InstructorAuth:
             "departments": list(set(instructor["profile"].get("department", "Computer Science") for instructor in self.instructors.values()))
         }
 
+def send_notification_to_students(class_code, title, message):
+    """Send a notification to all students in a class"""
+    auth = InstructorAuth()
+    if class_code not in auth.classes:
+        return False, "Class not found"
+
+    class_data = auth.classes[class_code]
+    students = class_data["enrolled_students"]
+
+    # Create notification object
+    notification = {
+        "title": title,
+        "message": message,
+        "class_code": class_code,
+        "timestamp": datetime.now().isoformat(),
+        "students": students,
+    }
+
+    # Save notification to a shared file
+    notifications_file = "notifications.json"
+    if os.path.exists(notifications_file):
+        with open(notifications_file, "r") as f:
+            notifications = json.load(f)
+    else:
+        notifications = []
+
+    notifications.append(notification)
+
+    with open(notifications_file, "w") as f:
+        json.dump(notifications, f, indent=2)
+
+    return True, "Notification sent successfully"
+
 def show_instructor_login():
     """Display instructor login form"""
     st.markdown("""
