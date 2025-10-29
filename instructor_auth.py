@@ -7,6 +7,9 @@ import os
 import pandas as pd
 from ai_features import AIFeatures
 from meetings import render_meeting, suggest_room_for_user
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 class InstructorAuth:
     def __init__(self):
@@ -279,8 +282,36 @@ class InstructorAuth:
             "departments": list(set(instructor["profile"].get("department", "Computer Science") for instructor in self.instructors.values()))
         }
 
+def send_email_notification(to_email, subject, body):
+    """Send an email notification to a student"""
+    # Gmail SMTP server configuration
+    smtp_server = "smtp.gmail.com"
+    smtp_port = 587
+    sender_email = "your_email@gmail.com"  # Replace with your Gmail address
+    sender_password = "your_password"  # Replace with your Gmail app password
+
+    try:
+        # Create the email
+        msg = MIMEMultipart()
+        msg["From"] = sender_email
+        msg["To"] = to_email
+        msg["Subject"] = subject
+        msg.attach(MIMEText(body, "plain"))
+
+        # Connect to the Gmail SMTP server
+        server = smtplib.SMTP(smtp_server, smtp_port)
+        server.starttls()  # Upgrade the connection to secure
+        server.login(sender_email, sender_password)
+
+        # Send the email
+        server.sendmail(sender_email, to_email, msg.as_string())
+        server.quit()
+        return True, "Email sent successfully"
+    except Exception as e:
+        return False, f"Failed to send email: {str(e)}"
+
 def send_notification_to_students(class_code, title, message):
-    """Send a notification to all students in a class"""
+    """Send a notification to all students in a class and email them"""
     auth = InstructorAuth()
     if class_code not in auth.classes:
         return False, "Class not found"
@@ -309,6 +340,24 @@ def send_notification_to_students(class_code, title, message):
 
     with open(notifications_file, "w") as f:
         json.dump(notifications, f, indent=2)
+
+    # Send email notifications to students
+    for student in students:
+        student_email = auth.get_student_email(student)  # Fetch student email from the database
+        email_subject = f"New Notification: {title}"
+        email_body = f"""
+        Dear {student},
+
+        You have a new notification from your instructor:
+
+        Title: {title}
+        Message: {message}
+        Class Code: {class_code}
+
+        Best regards,
+        Smart Notification App
+        """
+        send_email_notification(student_email, email_subject, email_body)
 
     return True, "Notification sent successfully"
 
