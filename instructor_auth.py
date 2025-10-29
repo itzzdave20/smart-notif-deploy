@@ -328,15 +328,6 @@ def show_instructor_login():
                         st.session_state.instructor_logged_in = True
                         st.session_state.instructor_session_id = result
                         st.session_state.instructor_username = username
-                        # AI-powered system notification on instructor login
-                        try:
-                            if 'notification_engine' in st.session_state:
-                                st.session_state.notification_engine.create_system_notification(
-                                    system_event="Instructor Login",
-                                    details=f"User {username} logged in"
-                                )
-                        except Exception as _e:
-                            pass
                         st.success("✅ Login successful!")
                         st.rerun()
                     else:
@@ -381,7 +372,6 @@ def show_instructor_login():
                         st.error("Passwords do not match")
                 else:
                     st.warning("Please fill in all fields")
-    
     st.markdown('</div>', unsafe_allow_html=True)
     
     # Show default credentials info
