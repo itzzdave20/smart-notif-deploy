@@ -282,32 +282,41 @@ class InstructorAuth:
             "departments": list(set(instructor["profile"].get("department", "Computer Science") for instructor in self.instructors.values()))
         }
 
+    def get_student_email(self, student_username):
+        """Retrieve the email address of a student"""
+        # Replace this with the actual logic to fetch student emails from your database
+        student_emails = {
+            "student1": "student1@example.com",
+            "student2": "student2@example.com",
+            "student3": "student3@example.com",
+            "student4": "student4@example.com",
+            "student5": "student5@example.com",
+            "student6": "student6@example.com",
+        }
+        return student_emails.get(student_username, None)
+
 def send_email_notification(to_email, subject, body):
     """Send an email notification to a student"""
-    # Gmail SMTP server configuration
     smtp_server = "smtp.gmail.com"
     smtp_port = 587
     sender_email = "your_email@gmail.com"  # Replace with your Gmail address
-    sender_password = "your_password"  # Replace with your Gmail app password
+    sender_password = "your_app_password"  # Replace with your Gmail app password
 
     try:
-        # Create the email
         msg = MIMEMultipart()
         msg["From"] = sender_email
         msg["To"] = to_email
         msg["Subject"] = subject
         msg.attach(MIMEText(body, "plain"))
 
-        # Connect to the Gmail SMTP server
         server = smtplib.SMTP(smtp_server, smtp_port)
-        server.starttls()  # Upgrade the connection to secure
+        server.starttls()
         server.login(sender_email, sender_password)
-
-        # Send the email
         server.sendmail(sender_email, to_email, msg.as_string())
         server.quit()
         return True, "Email sent successfully"
     except Exception as e:
+        print(f"Error sending email to {to_email}: {e}")  # Log the error
         return False, f"Failed to send email: {str(e)}"
 
 def send_notification_to_students(class_code, title, message):
@@ -360,6 +369,15 @@ def send_notification_to_students(class_code, title, message):
         send_email_notification(student_email, email_subject, email_body)
 
     return True, "Notification sent successfully"
+
+# Test the notification function
+auth = InstructorAuth()
+success, message = send_notification_to_students(
+    class_code="CS101",
+    title="Assignment Reminder",
+    message="Please submit your assignment by tomorrow."
+)
+print(success, message)
 
 def show_instructor_login():
     """Display instructor login form"""
