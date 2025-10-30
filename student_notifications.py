@@ -126,6 +126,53 @@ def send_notification_to_students(class_code, title, message):
 
     return True, "Notification sent successfully"
 
+def show_student_profile():
+    """Display and manage the student profile"""
+    st.header("👤 My Profile")
+
+    # Ensure valid student session
+    session_id = st.session_state.get("student_session_id")
+    if not session_id:
+        st.error("No student session found. Please login again.")
+        return
+
+    student_info = st.session_state.student_auth.get_student_info(session_id)
+    if not student_info:
+        st.error("Unable to load student information")
+        return
+
+    # Display student profile details
+    st.subheader("Profile Details")
+    st.write(f"**Username:** {student_info['username']}")
+    st.write(f"**Full Name:** {student_info.get('full_name', 'N/A')}")
+    st.write(f"**Email:** {student_info.get('email', 'N/A')}")
+    st.write(f"**Phone:** {student_info.get('phone', 'N/A')}")
+    st.write(f"**Enrolled Classes:** {', '.join(student_info.get('enrolled_classes', [])) or 'None'}")
+
+    # Allow the student to update their profile
+    st.subheader("Update Profile")
+    full_name = st.text_input("Full Name", value=student_info.get("full_name", ""))
+    email = st.text_input("Email", value=student_info.get("email", ""))
+    phone = st.text_input("Phone", value=student_info.get("phone", ""))
+
+    if st.button("Update Profile"):
+        # Update the student profile in the database
+        student_info["full_name"] = full_name
+        student_info["email"] = email
+        student_info["phone"] = phone
+        st.session_state.student_auth.update_student_info(session_id, student_info)
+        st.success("Profile updated successfully!")
+
+def student_dashboard():
+    """Main student dashboard"""
+    st.sidebar.title("Student Dashboard")
+    option = st.sidebar.radio("Navigate", ["Notifications", "Profile"])
+
+    if option == "Notifications":
+        show_student_notifications()
+    elif option == "Profile":
+        show_student_profile()
+
 # Test email sending
 success, message = send_email_notification(
     to_email="test_student@example.com",

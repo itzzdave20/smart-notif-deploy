@@ -19,6 +19,7 @@ class InstructorAuth:
         self.load_instructors()
         self.load_instructor_sessions()
         self.load_classes()
+        self.load_students()
     
     def load_instructors(self):
         """Load instructors from file"""
@@ -295,89 +296,120 @@ class InstructorAuth:
         }
         return student_emails.get(student_username, None)
 
-def send_email_notification(to_email, subject, body):
-    """Send an email notification to a student"""
-    smtp_server = "smtp.gmail.com"
-    smtp_port = 587
-    sender_email = "your_email@gmail.com"  # Replace with your Gmail address
-    sender_password = "your_app_password"  # Replace with your Gmail app password
+    def send_email_notification(to_email, subject, body):
+        """Send an email notification to a student"""
+        smtp_server = "smtp.gmail.com"
+        smtp_port = 587
+        sender_email = "your_email@gmail.com"  # Replace with your Gmail address
+        sender_password = "your_app_password"  # Replace with your Gmail app password
 
-    try:
-        msg = MIMEMultipart()
-        msg["From"] = sender_email
-        msg["To"] = to_email
-        msg["Subject"] = subject
-        msg.attach(MIMEText(body, "plain"))
+        try:
+            msg = MIMEMultipart()
+            msg["From"] = sender_email
+            msg["To"] = to_email
+            msg["Subject"] = subject
+            msg.attach(MIMEText(body, "plain"))
 
-        server = smtplib.SMTP(smtp_server, smtp_port)
-        server.starttls()
-        server.login(sender_email, sender_password)
-        server.sendmail(sender_email, to_email, msg.as_string())
-        server.quit()
-        return True, "Email sent successfully"
-    except Exception as e:
-        print(f"Error sending email to {to_email}: {e}")  # Log the error
-        return False, f"Failed to send email: {str(e)}"
+            server = smtplib.SMTP(smtp_server, smtp_port)
+            server.starttls()
+            server.login(sender_email, sender_password)
+            server.sendmail(sender_email, to_email, msg.as_string())
+            server.quit()
+            return True, "Email sent successfully"
+        except Exception as e:
+            print(f"Error sending email to {to_email}: {e}")  # Log the error
+            return False, f"Failed to send email: {str(e)}"
 
-def send_notification_to_students(class_code, title, message):
-    """Send a notification to all students in a class and email them"""
-    auth = InstructorAuth()
-    if class_code not in auth.classes:
-        return False, "Class not found"
+    def send_notification_to_students(class_code, title, message):
+        """Send a notification to all students in a class and email them"""
+        auth = InstructorAuth()
+        if class_code not in auth.classes:
+            return False, "Class not found"
 
-    class_data = auth.classes[class_code]
-    students = class_data["enrolled_students"]
+        class_data = auth.classes[class_code]
+        students = class_data["enrolled_students"]
 
-    # Create notification object
-    notification = {
-        "title": title,
-        "message": message,
-        "class_code": class_code,
-        "timestamp": datetime.now().isoformat(),
-        "students": students,
-    }
+        # Create notification object
+        notification = {
+            "title": title,
+            "message": message,
+            "class_code": class_code,
+            "timestamp": datetime.now().isoformat(),
+            "students": students,
+        }
 
-    # Save notification to a shared file
-    notifications_file = "notifications.json"
-    if os.path.exists(notifications_file):
-        with open(notifications_file, "r") as f:
-            notifications = json.load(f)
-    else:
-        notifications = []
+        # Save notification to a shared file
+        notifications_file = "notifications.json"
+        if os.path.exists(notifications_file):
+            with open(notifications_file, "r") as f:
+                notifications = json.load(f)
+        else:
+            notifications = []
 
-    notifications.append(notification)
+        notifications.append(notification)
 
-    with open(notifications_file, "w") as f:
-        json.dump(notifications, f, indent=2)
+        with open(notifications_file, "w") as f:
+            json.dump(notifications, f, indent=2)
 
-    # Send email notifications to students
-    for student in students:
-        student_email = auth.get_student_email(student)  # Fetch student email from the database
-        email_subject = f"New Notification: {title}"
-        email_body = f"""
-        Dear {student},
+        # Send email notifications to students
+        for student in students:
+            student_email = auth.get_student_email(student)  # Fetch student email from the database
+            email_subject = f"New Notification: {title}"
+            email_body = f"""
+            Dear {student},
 
-        You have a new notification from your instructor:
+            You have a new notification from your instructor:
 
-        Title: {title}
-        Message: {message}
-        Class Code: {class_code}
+            Title: {title}
+            Message: {message}
+            Class Code: {class_code}
 
-        Best regards,
-        Smart Notification App
-        """
-        send_email_notification(student_email, email_subject, email_body)
+            Best regards,
+            Smart Notification App
+            """
+            send_email_notification(student_email, email_subject, email_body)
 
-    return True, "Notification sent successfully"
+        return True, "Notification sent successfully"
 
-# Test the notification function
-auth = InstructorAuth()
-success, message = send_notification_to_students(
-    class_code="CS101",
-    title="Assignment Reminder",
-    message="Please submit your assignment by tomorrow."
-)
-print(success, message)
+    def update_student_info(self, session_id, updated_info):
+        """Update student information in the database"""
+        student_username = self.student_sessions.get(session_id)
+        if not student_username:
+            return False, "Invalid session ID"
+
+        if student_username in self.students:
+            self.students[student_username].update(updated_info)
+            self.save_students()
+            return True, "Student profile updated successfully"
+        return False, "Student not found"
+
+    def save_students(self):
+        """Save student data to a file"""
+        with open("students.json", "w") as f:
+            json.dump(self.students, f, indent=2)
+
+    def load_students(self):
+        """Load student data from a file"""
+        if os.path.exists("students.json"):
+            with open("students.json", "r") as f:
+                self.students = json.load(f)
+        else:
+            self.students = {
+                "student1": {
+                    "username": "student1",
+                    "full_name": "John Doe",
+                    "email": "student1@example.com",
+                    "phone": "+1234567890",
+                    "enrolled_classes": ["CS101", "MATH202"]
+                },
+                "student2": {
+                    "username": "student2",
+                    "full_name": "Jane Smith",
+                    "email": "student2@example.com",
+                    "phone": "+0987654321",
+                    "enrolled_classes": ["CS101"]
+                }
+            }
 
 def show_instructor_login():
     """Display instructor login form"""
