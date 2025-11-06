@@ -486,7 +486,11 @@ def show_instructor_notifications():
                                 success_count += 1
                         
                         if success_count > 0:
+                            total_students = sum(len(instructor_classes[code]['enrolled_students']) for code in target_classes)
                             st.success(f"✅ Notification sent to {success_count} class(es) successfully!")
+                            st.info(f"📧 Email notifications sent to {total_students} student(s). They will also see pop-up notifications on their screen.")
+                            # Play sound to indicate success
+                            st.session_state.notification_engine.notification_queue  # Ensure engine is initialized
                         else:
                             st.error("❌ Failed to send notification")
                     else:

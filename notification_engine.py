@@ -1,6 +1,7 @@
 import smtplib
 import requests
 import json
+import os
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 from email.mime.text import MIMEText
@@ -88,6 +89,15 @@ class NotificationEngine:
                     sentiment_analysis = self.ai.analyze_sentiment(personalized_message)
                     sentiment_score = sentiment_analysis['confidence']
                 
+                # Create notification dict for email and database
+                notification_dict = {
+                    'title': personalized_title,
+                    'message': personalized_message,
+                    'notification_type': notification_type,
+                    'priority': priority,
+                    'target_student': student_username
+                }
+                
                 # Add to database with student targeting
                 success = self.db.add_notification(
                     title=personalized_title,
@@ -102,8 +112,15 @@ class NotificationEngine:
                 
                 if success:
                     success_count += 1
-                    # Add to queue for immediate sending if no schedule
+                    
+                    # Send email notification immediately if not scheduled
                     if not scheduled_for or scheduled_for <= datetime.now():
+                        # Get student email and send
+                        student_email = self.get_student_email(student_username)
+                        if student_email:
+                            self.send_email_notification(notification_dict, student_email)
+                        
+                        # Add to queue for immediate sending
                         self.notification_queue.append({
                             'title': personalized_title,
                             'message': personalized_message,
@@ -161,37 +178,85 @@ class NotificationEngine:
             print(f"Error sending notification {notification_id}: {e}")
             return False
     
-    def send_email_notification(self, notification: Dict) -> bool:
+    def get_student_email(self, student_username: str) -> Optional[str]:
+        """Get student email from students.json"""
+        try:
+            students_file = "students.json"
+            if os.path.exists(students_file):
+                with open(students_file, 'r') as f:
+                    students = json.load(f)
+                    if student_username in students:
+                        return students[student_username].get('email')
+            return None
+        except Exception as e:
+            print(f"Error getting student email: {e}")
+            return None
+    
+    def send_email_notification(self, notification: Dict, student_email: str = None) -> bool:
         """Send notification via email"""
         try:
-            # This is a placeholder - you would need to configure SMTP settings
-            # For demo purposes, we'll just log the email
+            # Get email from environment variables or use defaults
+            smtp_server = os.getenv('SMTP_SERVER', 'smtp.gmail.com')
+            smtp_port = int(os.getenv('SMTP_PORT', '587'))
+            sender_email = os.getenv('EMAIL_USERNAME', '')
+            sender_password = os.getenv('EMAIL_PASSWORD', '')
             
-            email_content = f"""
-            Subject: {notification['title']}
+            # If no email configured, just log it
+            if not sender_email or not sender_password:
+                print(f"EMAIL NOTIFICATION (SMTP not configured):")
+                print(f"To: {student_email or 'student'}")
+                print(f"Subject: {notification['title']}")
+                print(f"Message: {notification['message']}")
+                print("-" * 50)
+                return True  # Return True to not block notification creation
             
-            {notification['message']}
+            # Get target student email if not provided
+            target_email = student_email
+            if not target_email and notification.get('target_student'):
+                target_email = self.get_student_email(notification['target_student'])
             
-            Priority: {notification['priority']}
-            Type: {notification['notification_type']}
-            Sent at: {datetime.now()}
+            if not target_email:
+                print(f"No email found for notification target")
+                return False
+            
+            # Create email message
+            msg = MIMEMultipart()
+            msg["From"] = sender_email
+            msg["To"] = target_email
+            msg["Subject"] = f"🔔 {notification['title']}"
+            
+            # Create email body
+            email_body = f"""
+Dear Student,
+
+You have received a new notification:
+
+{notification['message']}
+
+Notification Details:
+- Type: {notification.get('notification_type', 'info')}
+- Priority: {notification.get('priority', 1)}
+- Sent: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+Best regards,
+Smart Notification App
             """
             
-            print(f"EMAIL NOTIFICATION SENT:")
-            print(email_content)
-            print("-" * 50)
+            msg.attach(MIMEText(email_body, "plain"))
             
-            # In a real implementation, you would use smtplib:
-            # smtp_server = smtplib.SMTP('smtp.gmail.com', 587)
-            # smtp_server.starttls()
-            # smtp_server.login('your_email@gmail.com', 'your_password')
-            # smtp_server.sendmail('from@example.com', 'to@example.com', email_content)
-            # smtp_server.quit()
+            # Send email
+            server = smtplib.SMTP(smtp_server, smtp_port)
+            server.starttls()
+            server.login(sender_email, sender_password)
+            server.sendmail(sender_email, target_email, msg.as_string())
+            server.quit()
             
+            print(f"✅ Email sent successfully to {target_email}")
             return True
             
         except Exception as e:
-            print(f"Error sending email notification: {e}")
+            print(f"❌ Error sending email notification: {e}")
+            # Don't fail the entire notification if email fails
             return False
     
     def send_push_notification(self, notification: Dict) -> bool:

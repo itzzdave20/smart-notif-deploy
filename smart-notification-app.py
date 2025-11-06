@@ -1771,15 +1771,57 @@ def show_student_notifications():
             notification.get('target_student') is None):
             notifications.append(notification)
     
+    # Track last seen notification to show pop-ups for new ones
+    if 'last_seen_notification_id' not in st.session_state:
+        st.session_state.last_seen_notification_id = 0
+    
+    # Check for new notifications and show pop-ups
+    new_notifications = [n for n in notifications if n.get('id', 0) > st.session_state.last_seen_notification_id]
+    
+    if new_notifications:
+        # Show pop-up for each new notification
+        for notification in new_notifications:
+            # Play sound
+            play_notification_sound()
+            
+            # Show browser notification
+            show_browser_notification(notification['title'], notification['message'])
+            
+            # Show Streamlit toast notification
+            st.toast(
+                f"🔔 {notification['title']}",
+                icon="🔔"
+            )
+        
+        # Update last seen notification ID
+        if notifications:
+            st.session_state.last_seen_notification_id = max([n.get('id', 0) for n in notifications])
+    
+    # Add auto-check for new notifications (using Streamlit's rerun)
+    if st.button("🔄 Refresh Notifications", type="secondary"):
+        st.rerun()
+    
+    # Show notification badge
+    if new_notifications:
+        st.info(f"🆕 {len(new_notifications)} new notification(s)!")
+    
     if notifications:
         st.subheader("Recent Notifications")
+        
+        # Sort by creation date (newest first)
+        notifications.sort(key=lambda x: x.get('created_at', ''), reverse=True)
         
         for notification in notifications:
             with st.container():
                 col1, col2 = st.columns([3, 1])
                 
                 with col1:
-                    st.write(f"**{notification['title']}**")
+                    # Highlight new notifications
+                    is_new = notification.get('id', 0) > (st.session_state.get('last_seen_notification_id', 0) - len(new_notifications))
+                    if is_new:
+                        st.markdown(f"**🆕 {notification['title']}**")
+                    else:
+                        st.write(f"**{notification['title']}**")
                     st.write(notification['message'])
                     st.caption(f"Created: {notification['created_at']}")
                 
@@ -1789,6 +1831,8 @@ def show_student_notifications():
                     }
                     st.write(f"{priority_color.get(notification['priority'], '⚪')} Priority {notification['priority']}")
                     st.write(f"Type: {notification['notification_type']}")
+                
+                st.markdown("---")
     else:
         st.info("No notifications available")
 

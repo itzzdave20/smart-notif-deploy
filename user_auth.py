@@ -540,6 +540,69 @@ def show_student_dashboard():
     profile = student_info["profile"]
     st.success(f"Welcome back, {profile['first_name']}!")
     
+    # Check for new notifications
+    student_username = student_info['username']
+    all_notifications = st.session_state.db.get_notifications(limit=50)
+    student_notifications = [
+        n for n in all_notifications 
+        if (n.get('target_student') == student_username or n.get('target_student') is None)
+    ]
+    
+    # Track last seen notification
+    if 'last_seen_notification_id' not in st.session_state:
+        st.session_state.last_seen_notification_id = 0
+    
+    new_notifications = [
+        n for n in student_notifications 
+        if n.get('id', 0) > st.session_state.last_seen_notification_id
+    ]
+    
+    # Show notification alert on dashboard
+    if new_notifications:
+        st.warning(f"🔔 You have {len(new_notifications)} new notification(s)! Click 'View Notifications' to see them.")
+        # Play sound and show browser notification
+        # Note: These functions are defined in smart-notification-app.py
+        # They will be called when the page renders
+        st.markdown("""
+        <script>
+        (function(){
+          try {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) {
+              const ctx = new AudioCtx();
+              const osc = ctx.createOscillator();
+              const gain = ctx.createGain();
+              osc.type = 'sine';
+              osc.frequency.setValueAtTime(880, ctx.currentTime);
+              gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+              gain.gain.exponentialRampToValueAtTime(0.15, ctx.currentTime + 0.01);
+              gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.20);
+              osc.connect(gain);
+              gain.connect(ctx.destination);
+              osc.start();
+              osc.stop(ctx.currentTime + 0.21);
+            }
+            
+            if ('Notification' in window && Notification.permission === 'granted') {
+              new Notification('""" + new_notifications[0]['title'] + """', {
+                body: '""" + new_notifications[0]['message'][:100] + """',
+                icon: '🔔'
+              });
+            } else if ('Notification' in window && Notification.permission !== 'denied') {
+              Notification.requestPermission().then(function(permission) {
+                if (permission === 'granted') {
+                  new Notification('""" + new_notifications[0]['title'] + """', {
+                    body: '""" + new_notifications[0]['message'][:100] + """',
+                    icon: '🔔'
+                  });
+                }
+              });
+            }
+          } catch(e) {}
+        })();
+        </script>
+        """, unsafe_allow_html=True)
+    
     # Student stats
     col1, col2, col3, col4 = st.columns(4)
     
@@ -550,12 +613,13 @@ def show_student_dashboard():
     with col3:
         st.metric("Year", profile['year'])
     with col4:
-        st.metric("Notifications", "🔔 On" if profile.get('notifications_enabled') else "🔕 Off")
+        notification_count = len(student_notifications)
+        st.metric("Notifications", f"{notification_count} total")
     
     # Quick actions based on permissions
     st.subheader("Quick Actions")
     
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
     
     with col1:
         if auth.has_student_permission(st.session_state.student_session_id, "attendance"):
@@ -570,9 +634,23 @@ def show_student_dashboard():
                 st.rerun()
     
     with col3:
+        if st.button("🔔 Notifications", type="primary", key="dashboard_notifications"):
+            st.session_state.student_page = "notifications"
+            st.rerun()
+    
+    with col4:
         if st.button("👤 My Profile", type="primary", key="dashboard_profile"):
             st.session_state.student_page = "profile"
             st.rerun()
+    
+    # Recent notifications preview
+    if student_notifications:
+        st.subheader("Recent Notifications")
+        for notification in student_notifications[:3]:  # Show last 3
+            with st.container():
+                st.write(f"**{notification['title']}**")
+                st.caption(f"{notification['message'][:100]}... | {notification['created_at']}")
+                st.markdown("---")
     
     # Recent activity (placeholder)
     st.subheader("Recent Activity")
