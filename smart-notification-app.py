@@ -537,7 +537,7 @@ def show_admin_interface():
     """Show admin interface"""
     # Admin logout button in sidebar
     show_admin_logout()
-    
+
     # Show user info in sidebar
     user_info = st.session_state.admin_auth.get_user_info(st.session_state.admin_session_id)
     if user_info:
@@ -545,36 +545,47 @@ def show_admin_interface():
         st.sidebar.markdown(f"**👤 Logged in as:** {user_info['username']}")
         st.sidebar.markdown(f"**🔑 Role:** {user_info['role']}")
         st.sidebar.markdown(f"**⚡ Permissions:** {', '.join(user_info['permissions'])}")
-    
+
     # Sidebar navigation
     st.sidebar.title("Navigation")
-    
+
     # Offline Sync Button
     st.sidebar.markdown("---")
     col1, col2 = st.sidebar.columns([1, 1])
     with col1:
         if st.button("🔄 Sync", help="Sync offline data"):
-            st.markdown("""
-            <script>
-            if (window.offlineManager) {
-                window.offlineManager.manualSync();
-            }
-            </script>
-            """, unsafe_allow_html=True)
+            st.markdown(
+                """
+                <script>
+                if (window.offlineManager) {
+                    window.offlineManager.manualSync();
+                }
+                </script>
+                """,
+                unsafe_allow_html=True,
+            )
     with col2:
-        st.markdown("""
-        <div id="sync-status" style="font-size: 12px; color: #666;">
-            <span id="sync-indicator">🟢</span> <span id="sync-text">Online</span>
-        </div>
-        """, unsafe_allow_html=True)
-    
+        st.markdown(
+            """
+            <div id="sync-status" style="font-size: 12px; color: #666;">
+                <span id="sync-indicator">🟢</span> <span id="sync-text">Online</span>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
     # Add admin section to navigation
-    navigation_options = ["Dashboard", "Attendance Management", "Smart Notifications", "AI Features", "Analytics", "Settings", "🛡️ Admin Panel"]
-    page = st.sidebar.selectbox(
-        "Choose a page",
-        navigation_options
-    )
-    
+    navigation_options = [
+        "Dashboard",
+        "Attendance Management",
+        "Smart Notifications",
+        "AI Features",
+        "Analytics",
+        "Settings",
+        "🛡️ Admin Panel",
+    ]
+    page = st.sidebar.selectbox("Choose a page", navigation_options)
+
     if page == "Dashboard":
         show_dashboard()
     elif page == "Attendance Management":
@@ -584,160 +595,179 @@ def show_admin_interface():
     elif page == "AI Features":
         show_ai_features()
     elif page == "Analytics":
-                # ...existing code...
-                with col1:
-                    person_name = st.text_input("Person Name", placeholder="Enter full name")
-                    uploaded_file = st.file_uploader("Upload Photo", type=['jpg', 'jpeg', 'png'], key="register_person_photo")
-                    
-        -            if st.button("Register Person", type="primary"):
-        +            if st.button("Register Person", key="register_person_btn"):
-                         if person_name and uploaded_file:
-                             # Convert uploaded file to bytes
-                             image_bytes = uploaded_file.read()
-                             
-                             success = st.session_state.attendance_system.register_person(
-                                 person_name, image_bytes=image_bytes
-                             )
-                             
-                             if success:
-                                 st.success(f"✅ {person_name} registered successfully!")
-                                 st.session_state.notification_engine.create_system_notification(
-                                     "Person Registered", f"{person_name} has been registered for attendance tracking"
-                                 )
-                             else:
-                                 st.error("❌ Failed to register person. Please check the image and try again.")
-                         else:
-                             st.warning("Please provide both name and photo")
-        # ...existing code...
-                with col1:
-                    uploaded_attendance = st.file_uploader("Upload Photo for Attendance", type=['jpg', 'jpeg', 'png'], key="admin_attendance_photo")
-                    
-        -        if st.button("Mark Attendance", type="primary"):
-        +        if st.button("Mark Attendance", key="mark_attendance_btn_admin"):
-                     if uploaded_attendance:
-                         image_bytes = uploaded_attendance.read()
-                         
-                         with st.spinner("Processing attendance..."):
-                             result = st.session_state.attendance_system.mark_attendance(image_bytes=image_bytes)
-                
-                if result and result.get('success'):
-                    st.success("✅ Attendance marked successfully!")
+        # Analytics layout: registration, upload attendance, records, live capture
+        tab1, tab2, tab3, tab4 = st.tabs(
+            ["Register Person", "Mark Attendance (Upload)", "Attendance Records", "Live Camera Capture"]
+        )
 
-                    # Show recognized faces
-                    if result.get('recognized_faces'):
-                        st.write("**Recognized People:**")
-                        for face in result['recognized_faces']:
-                            st.write(f"• {face['name']} (Confidence: {face.get('confidence', 0):.2f})")
+        # Register Person
+        with tab1:
+            st.subheader("Register Person")
+            col1, col2 = st.columns([2, 1])
+            with col1:
+                person_name = st.text_input("Person Name", placeholder="Enter full name")
+                uploaded_file = st.file_uploader(
+                    "Upload Photo", type=["jpg", "jpeg", "png"], key="register_person_photo"
+                )
 
-                    # Show unknown faces
-                    if result.get('unknown_faces'):
-                        st.warning(f"⚠️ {len(result['unknown_faces'])} unknown faces detected")
-
-                    # Create notification
-                    st.session_state.notification_engine.create_attendance_notification(result)
-
-                    # Store offline if needed
-                    st.markdown(
-                        """
-                        <script>
-                        if (!navigator.onLine && window.offlineManager) {
-                            const offlineData = {
-                                type: 'attendance',
-                                data: """ + str(result).replace("'", '"') + """,
-                                timestamp: new Date().toISOString()
-                            };
-                            window.offlineManager.storeOfflineData('attendance', offlineData);
-                            console.log('Attendance data stored offline');
-                        }
-                        </script>
-                        """,
-                        unsafe_allow_html=True
-                    )
-                else:
-                    st.error("❌ Failed to mark attendance")
-                    if result and 'error' in result:
-                        st.error(f"Error: {result['error']}")
-            else:
-                st.warning("Please upload a photo")
-
-        with col2:
-            st.info("""
-            **Attendance Tips:**
-            - Ensure good lighting
-            - Face should be clearly visible
-            - Multiple people can be detected
-            - System will recognize registered faces
-            """)
-    
-    with tab3:
-        st.subheader("Attendance Records")
-        
-        # Filter options
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            days_filter = st.selectbox("Time Period", [7, 30, 90], index=0)
-        with col2:
-            person_filter = st.selectbox("Person", ["All"] + st.session_state.attendance_system.known_face_names)
-        with col3:
-            if st.button("Refresh Data"):
-                st.rerun()
-        
-        # Get attendance data
-        attendance_summary = st.session_state.attendance_system.get_attendance_summary(days_filter)
-        
-        # Display statistics
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("Total Records", attendance_summary.get('stats', {}).get('total_attendance', 0))
-        with col2:
-            st.metric("Unique People", attendance_summary.get('stats', {}).get('unique_people', 0))
-        with col3:
-            st.metric("Today's Count", attendance_summary.get('stats', {}).get('today_attendance', 0))
-        
-        # Display records table
-        today_records = attendance_summary.get('today_attendance', [])
-        if today_records:
-            df = pd.DataFrame(today_records)
-            st.dataframe(df, use_container_width=True)
-        else:
-            st.info("No attendance records found for the selected period.")
-    
-    with tab4:
-        st.subheader("Live Camera Capture")
-        
-        if st.button("Capture from Camera", key="capture_from_camera_btn"):
-            with st.spinner("Capturing from camera..."):
-                frame = st.session_state.attendance_system.capture_from_camera()
-            
-            if frame is not None:
-                # Convert frame to image
-                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                st.image(frame_rgb, caption="Captured Image", use_container_width=True)
-                
-                # Process the captured image
-                if st.button("Process Captured Image", key="process_captured_image_btn"):
-                    # Convert frame to bytes
-                    _, buffer = cv2.imencode('.jpg', frame)
-                    image_bytes = buffer.tobytes()
-                    
-                    with st.spinner("Processing..."):
-                        result = st.session_state.attendance_system.mark_attendance(image_bytes=image_bytes)
-                    
-                    if result['success']:
-                        st.success("✅ Attendance processed!")
-                        
-                        # Show results
-                        if result['recognized_faces']:
-                            st.write("**Recognized:**")
-                            for face in result['recognized_faces']:
-                                st.write(f"• {face['name']} ({face['confidence']:.2f})")
-                        
-                        # Create notification
-                        st.session_state.notification_engine.create_attendance_notification(result)
+                if st.button("Register Person", key="register_person_btn"):
+                    if person_name and uploaded_file:
+                        image_bytes = uploaded_file.read()
+                        success = st.session_state.attendance_system.register_person(
+                            person_name, image_bytes=image_bytes
+                        )
+                        if success:
+                            st.success(f"✅ {person_name} registered successfully!")
+                            st.session_state.notification_engine.create_system_notification(
+                                "Person Registered",
+                                f"{person_name} has been registered for attendance tracking",
+                            )
+                        else:
+                            st.error("❌ Failed to register person. Please check the image and try again.")
                     else:
-                        st.error("❌ No faces recognized")
+                        st.warning("Please provide both name and photo")
+            with col2:
+                st.info(
+                    """
+                    **Registration Tips:**
+                    - Use a clear frontal photo
+                    - Name must match official records
+                    """
+                )
+
+        # Mark Attendance via Upload
+        with tab2:
+            st.subheader("Mark Attendance (Upload Photo)")
+            col1, col2 = st.columns([2, 1])
+            with col1:
+                uploaded_attendance = st.file_uploader(
+                    "Upload Photo for Attendance", type=["jpg", "jpeg", "png"], key="admin_attendance_photo"
+                )
+
+                if st.button("Mark Attendance", key="mark_attendance_btn_admin"):
+                    if uploaded_attendance:
+                        image_bytes = uploaded_attendance.read()
+                        with st.spinner("Processing attendance..."):
+                            result = st.session_state.attendance_system.mark_attendance(
+                                image_bytes=image_bytes
+                            )
+
+                        if result and result.get("success"):
+                            st.success("✅ Attendance marked successfully!")
+
+                            # Show recognized faces
+                            if result.get("recognized_faces"):
+                                st.write("**Recognized People:**")
+                                for face in result["recognized_faces"]:
+                                    st.write(
+                                        f"• {face['name']} (Confidence: {face.get('confidence', 0):.2f})"
+                                    )
+
+                            # Show unknown faces
+                            if result.get("unknown_faces"):
+                                st.warning(f"⚠️ {len(result['unknown_faces'])} unknown faces detected")
+
+                            # Create notification
+                            st.session_state.notification_engine.create_attendance_notification(result)
+
+                            # Store offline if needed
+                            st.markdown(
+                                """
+                                <script>
+                                if (!navigator.onLine && window.offlineManager) {
+                                    const offlineData = {
+                                        type: 'attendance',
+                                        data: """ + str(result).replace("'", '"') + """,
+                                        timestamp: new Date().toISOString()
+                                    };
+                                    window.offlineManager.storeOfflineData('attendance', offlineData);
+                                    console.log('Attendance data stored offline');
+                                }
+                                </script>
+                                """,
+                                unsafe_allow_html=True,
+                            )
+                        else:
+                            st.error("❌ Failed to mark attendance")
+                            if result and "error" in result:
+                                st.error(f"Error: {result['error']}")
+                    else:
+                        st.warning("Please upload a photo")
+            with col2:
+                st.info(
+                    """
+                    **Attendance Tips:**
+                    - Ensure good lighting
+                    - Face should be clearly visible
+                    - Multiple people can be detected
+                    - System will recognize registered faces
+                    """
+                )
+
+        # Attendance Records
+        with tab3:
+            st.subheader("Attendance Records")
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                days_filter = st.selectbox("Time Period", [7, 30, 90], index=0)
+            with col2:
+                person_filter = st.selectbox(
+                    "Person", ["All"] + st.session_state.attendance_system.known_face_names
+                )
+            with col3:
+                if st.button("Refresh Data", key="refresh_attendance_data"):
+                    st.rerun()
+
+            attendance_summary = st.session_state.attendance_system.get_attendance_summary(days_filter)
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Total Records", attendance_summary.get("stats", {}).get("total_attendance", 0))
+            with col2:
+                st.metric("Unique People", attendance_summary.get("stats", {}).get("unique_people", 0))
+            with col3:
+                st.metric("Today's Count", attendance_summary.get("stats", {}).get("today_attendance", 0))
+            
+            # Display records table
+            today_records = attendance_summary.get('today_attendance', [])
+            if today_records:
+                df = pd.DataFrame(today_records)
+                st.dataframe(df, use_container_width=True)
             else:
-                st.error("❌ Failed to capture from camera")
+                st.info("No attendance records found for the selected period.")
+        
+        with tab4:
+            st.subheader("Live Camera Capture")
+            if st.button("Capture from Camera", key="capture_from_camera_btn"):
+                with st.spinner("Capturing from camera..."):
+                    frame = st.session_state.attendance_system.capture_from_camera()
+
+                if frame is not None:
+                    # Convert frame to image
+                    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                    st.image(frame_rgb, caption="Captured Image", use_container_width=True)
+
+                    # Process the captured image
+                    if st.button("Process Captured Image", key="process_captured_image_btn"):
+                        _, buffer = cv2.imencode(".jpg", frame)
+                        image_bytes = buffer.tobytes()
+                        with st.spinner("Processing..."):
+                            result = st.session_state.attendance_system.mark_attendance(image_bytes=image_bytes)
+
+                        if result and result.get("success"):
+                            st.success("✅ Attendance processed!")
+
+                            # Show results
+                            if result.get("recognized_faces"):
+                                st.write("**Recognized:**")
+                                for face in result.get("recognized_faces", []):
+                                    st.write(f"• {face.get('name')} ({face.get('confidence', 0):.2f})")
+
+                            # Create notification
+                            st.session_state.notification_engine.create_attendance_notification(result)
+                        else:
+                            st.error("❌ No faces recognized or processing failed")
+                else:
+                    st.error("❌ Failed to capture from camera")
 
 def show_notifications():
     # Default values
