@@ -584,335 +584,82 @@ def show_admin_interface():
     elif page == "AI Features":
         show_ai_features()
     elif page == "Analytics":
-        show_analytics()
-    elif page == "Settings":
-        show_settings()
-    elif page == "🛡️ Admin Panel":
-        show_admin_panel()
-
-    # Handle admin deep-links triggered from dashboard action buttons
-    if 'admin_page' in st.session_state:
-        if st.session_state.admin_page == "admin_panel":
-            show_admin_panel()
-        elif st.session_state.admin_page == "user_management":
-            show_user_management()
-        elif st.session_state.admin_page == "system_settings":
-            show_system_settings()
-        elif st.session_state.admin_page == "system_logs":
-            show_system_logs()
-        elif st.session_state.admin_page == "dashboard":
-            # Optional: ensure dashboard renders when requested
-            show_admin_dashboard()
-
-def show_student_interface():
-    """Show student interface"""
-    # Student logout button in sidebar
-    show_student_logout()
-    
-    # Show student info in sidebar
-    student_info = st.session_state.student_auth.get_student_info(st.session_state.student_session_id)
-    if student_info:
-        st.sidebar.markdown("---")
-        st.sidebar.markdown(f"**👤 Logged in as:** {student_info['username']}")
-        st.sidebar.markdown(f"**🔑 Role:** {student_info['role']}")
-        st.sidebar.markdown(f"**🎓 Major:** {student_info['profile']['major']}")
-        st.sidebar.markdown(f"**📚 Year:** {student_info['profile']['year']}")
-        st.sidebar.markdown(f"**⚡ Permissions:** {', '.join(student_info['permissions'])}")
-    
-    # Sidebar navigation
-    st.sidebar.title("Navigation")
-    
-    # Student navigation options (limited based on permissions)
-    navigation_options = ["Dashboard", "My Profile"]
-    
-    if st.session_state.student_auth.has_student_permission(st.session_state.student_session_id, "attendance"):
-        navigation_options.append("Attendance")
-    
-    if st.session_state.student_auth.has_student_permission(st.session_state.student_session_id, "read"):
-        navigation_options.extend(["Notifications", "Reports"])
-    
-    # Add AI Features, Class Enrollment, and Quick Meet for students
-    navigation_options.extend(["Class Enrollment", "AI Features", "Quick Meet"])
-    
-    page = st.sidebar.selectbox(
-        "Choose a page",
-        navigation_options
-    )
-    
-    if page == "Dashboard":
-        show_student_dashboard()
-    elif page == "My Profile":
-        show_student_profile()
-    elif page == "Attendance":
-        show_student_attendance()
-    elif page == "Notifications":
-        show_student_notifications()
-    elif page == "Reports":
-        show_student_reports()
-    elif page == "Class Enrollment":
-        show_student_class_enrollment()
-    elif page == "AI Features":
-        show_ai_features()
-    elif page == "Quick Meet":
-        show_quick_meet()
-    
-    # Handle student page routing from dashboard buttons
-    if 'student_page' in st.session_state:
-        if st.session_state.student_page == "attendance":
-            show_student_attendance()
-        elif st.session_state.student_page == "reports":
-            show_student_reports()
-        elif st.session_state.student_page == "profile":
-            show_student_profile()
-
-def show_instructor_interface():
-    """Show instructor interface"""
-    # Instructor logout button in sidebar
-    show_instructor_logout()
-    
-    # Show instructor info in sidebar
-    instructor_info = st.session_state.instructor_auth.get_instructor_info(st.session_state.instructor_session_id)
-    if instructor_info:
-        st.sidebar.markdown("---")
-        st.sidebar.markdown(f"**👤 Logged in as:** {instructor_info['username']}")
-        st.sidebar.markdown(f"**🔑 Role:** {instructor_info['role']}")
-        st.sidebar.markdown(f"**🏢 Department:** {instructor_info['profile']['department']}")
-        st.sidebar.markdown(f"**⚡ Permissions:** {', '.join(instructor_info['permissions'])}")
-    
-    # Sidebar navigation
-    st.sidebar.title("Navigation")
-    
-    # Instructor navigation options
-    navigation_options = ["Dashboard", "My Profile", "Class Management", "Attendance", "Notifications", "Reports", "AI Features", "Quick Meet"]
-    
-    page = st.sidebar.selectbox(
-        "Choose a page",
-        navigation_options
-    )
-    
-    if page == "Dashboard":
-        show_instructor_dashboard()
-    elif page == "My Profile":
-        show_instructor_profile()
-    elif page == "Class Management":
-        show_instructor_class_management()
-    elif page == "Attendance":
-        show_instructor_class_attendance()
-    elif page == "Notifications":
-        show_instructor_notifications()
-    elif page == "Reports":
-        show_instructor_reports()
-    elif page == "AI Features":
-        show_ai_features()
-    elif page == "Quick Meet":
-        show_quick_meet()
-    
-    # Handle instructor page routing from dashboard buttons
-    if 'instructor_page' in st.session_state:
-        if st.session_state.instructor_page == "class_management":
-            show_instructor_class_management()
-        elif st.session_state.instructor_page == "attendance":
-            show_instructor_class_attendance()
-        elif st.session_state.instructor_page == "notifications":
-            show_instructor_notifications()
-        elif st.session_state.instructor_page == "reports":
-            show_instructor_reports()
-
-def show_dashboard():
-    st.header("📊 Dashboard Overview")
-    
-    # Get attendance summary
-    attendance_summary = st.session_state.attendance_system.get_attendance_summary(7)
-    
-    # Get notification analytics
-    notification_analytics = st.session_state.notification_engine.get_notification_analytics(7)
-    
-    # Key metrics
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        st.metric(
-            label="Today's Attendance",
-            value=attendance_summary.get('stats', {}).get('today_attendance', 0),
-            delta=f"{attendance_summary.get('registered_people', 0)} registered"
-        )
-    
-    with col2:
-        st.metric(
-            label="Total Notifications",
-            value=notification_analytics.get('total_notifications', 0),
-            delta=f"{notification_analytics.get('delivery_rate', 0)}% delivery rate"
-        )
-    
-    with col3:
-        st.metric(
-            label="Registered People",
-            value=attendance_summary.get('registered_people', 0),
-            delta="Face recognition ready"
-        )
-    
-    with col4:
-        st.metric(
-            label="AI Features",
-            value="Active",
-            delta="Sentiment analysis enabled"
-        )
-    
-    # Charts
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("📈 Attendance Trend (Last 7 Days)")
-        if attendance_summary.get('today_attendance'):
-            # Create a simple attendance chart
-            dates = [datetime.now() - timedelta(days=i) for i in range(7, 0, -1)]
-            attendance_data = [attendance_summary.get('stats', {}).get('today_attendance', 0)] * 7
-            
-            df_attendance = pd.DataFrame({
-                'Date': dates,
-                'Attendance': attendance_data
-            })
-            
-            fig_attendance = px.line(df_attendance, x='Date', y='Attendance', 
-                                   title='Daily Attendance Count')
-            st.plotly_chart(fig_attendance, use_container_width=True)
-        else:
-            st.info("No attendance data available yet. Register people and mark attendance to see trends.")
-    
-    with col2:
-        st.subheader("🔔 Notification Categories")
-        if notification_analytics.get('patterns', {}).get('category_distribution'):
-            categories = notification_analytics['patterns']['category_distribution']
-            
-            fig_categories = px.pie(
-                values=list(categories.values()),
-                names=list(categories.keys()),
-                title='Notification Distribution by Category'
-            )
-            st.plotly_chart(fig_categories, use_container_width=True)
-        else:
-            st.info("No notification data available yet. Create notifications to see analytics.")
-    
-    # Recent activity
-    st.subheader("🕒 Recent Activity")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.write("**Recent Attendance:**")
-        today_attendance = attendance_summary.get('today_attendance', [])
-        if today_attendance:
-            for record in today_attendance[:5]:  # Show last 5
-                st.write(f"• {record['person_name']} - {record['timestamp']}")
-        else:
-            st.write("No recent attendance records")
-    
-    with col2:
-        st.write("**Recent Notifications:**")
-        recent_notifications = st.session_state.db.get_notifications(limit=5)
-        if recent_notifications:
-            # Play sound once per rerun when there are any notifications
-            play_notification_sound()
-            for notification in recent_notifications:
-                st.write(f"• {notification['title']} - {notification['created_at']}")
-        else:
-            st.write("No recent notifications")
-
-def show_attendance_management():
-    st.header("👥 Attendance Management")
-    
-    tab1, tab2, tab3, tab4 = st.tabs(["Register Person", "Mark Attendance", "View Records", "Camera Capture"])
-    
-    with tab1:
-        st.subheader("Register New Person")
-        
-        col1, col2 = st.columns([1, 1])
-        
-        with col1:
-            person_name = st.text_input("Person Name", placeholder="Enter full name")
-            uploaded_file = st.file_uploader("Upload Photo", type=['jpg', 'jpeg', 'png'], key="register_person_photo")
-            
-            if st.button("Register Person", key="register_person_btn"):
-                 if person_name and uploaded_file:
-                     # Convert uploaded file to bytes
-                     image_bytes = uploaded_file.read()
-                     
-                     success = st.session_state.attendance_system.register_person(
-                         person_name, image_bytes=image_bytes
-                     )
-                     
-                     if success:
-                         st.success(f"✅ {person_name} registered successfully!")
-                         st.session_state.notification_engine.create_system_notification(
-                             "Person Registered", f"{person_name} has been registered for attendance tracking"
-                         )
-                     else:
-                         st.error("❌ Failed to register person. Please check the image and try again.")
-                 else:
-                     st.warning("Please provide both name and photo")
-        
-        with col2:
-            st.info("""
-            **Registration Tips:**
-            - Use clear, well-lit photos
-            - Face should be clearly visible
-            - Avoid sunglasses or hats
-            - Single person per photo
-            """)
-    
-    with tab2:
-        st.subheader("Mark Attendance")
-        
-        col1, col2 = st.columns([1, 1])
-        
-        with col1:
-            uploaded_attendance = st.file_uploader("Upload Photo for Attendance", type=['jpg', 'jpeg', 'png'], key="admin_attendance_photo")
-            
-        if st.button("Mark Attendance", key="mark_attendance_btn_admin"):
-             if uploaded_attendance:
-                 image_bytes = uploaded_attendance.read()
-                 
-                 with st.spinner("Processing attendance..."):
-                     result = st.session_state.attendance_system.mark_attendance(image_bytes=image_bytes)
-                
-                if result['success']:
-                    st.success("✅ Attendance marked successfully!")
+                # ...existing code...
+                with col1:
+                    person_name = st.text_input("Person Name", placeholder="Enter full name")
+                    uploaded_file = st.file_uploader("Upload Photo", type=['jpg', 'jpeg', 'png'], key="register_person_photo")
                     
+        -            if st.button("Register Person", type="primary"):
+        +            if st.button("Register Person", key="register_person_btn"):
+                         if person_name and uploaded_file:
+                             # Convert uploaded file to bytes
+                             image_bytes = uploaded_file.read()
+                             
+                             success = st.session_state.attendance_system.register_person(
+                                 person_name, image_bytes=image_bytes
+                             )
+                             
+                             if success:
+                                 st.success(f"✅ {person_name} registered successfully!")
+                                 st.session_state.notification_engine.create_system_notification(
+                                     "Person Registered", f"{person_name} has been registered for attendance tracking"
+                                 )
+                             else:
+                                 st.error("❌ Failed to register person. Please check the image and try again.")
+                         else:
+                             st.warning("Please provide both name and photo")
+        # ...existing code...
+                with col1:
+                    uploaded_attendance = st.file_uploader("Upload Photo for Attendance", type=['jpg', 'jpeg', 'png'], key="admin_attendance_photo")
+                    
+        -        if st.button("Mark Attendance", type="primary"):
+        +        if st.button("Mark Attendance", key="mark_attendance_btn_admin"):
+                     if uploaded_attendance:
+                         image_bytes = uploaded_attendance.read()
+                         
+                         with st.spinner("Processing attendance..."):
+                             result = st.session_state.attendance_system.mark_attendance(image_bytes=image_bytes)
+                
+                if result and result.get('success'):
+                    st.success("✅ Attendance marked successfully!")
+
                     # Show recognized faces
-                    if result['recognized_faces']:
+                    if result.get('recognized_faces'):
                         st.write("**Recognized People:**")
                         for face in result['recognized_faces']:
-                            st.write(f"• {face['name']} (Confidence: {face['confidence']:.2f})")
-                    
+                            st.write(f"• {face['name']} (Confidence: {face.get('confidence', 0):.2f})")
+
                     # Show unknown faces
-                    if result['unknown_faces']:
+                    if result.get('unknown_faces'):
                         st.warning(f"⚠️ {len(result['unknown_faces'])} unknown faces detected")
-                    
+
                     # Create notification
                     st.session_state.notification_engine.create_attendance_notification(result)
-                    
+
                     # Store offline if needed
-                    st.markdown("""
-                    <script>
-                    if (!navigator.onLine && window.offlineManager) {
-                        const offlineData = {
-                            type: 'attendance',
-                            data: """ + str(result).replace("'", '"') + """,
-                            timestamp: new Date().toISOString()
-                        };
-                        window.offlineManager.storeOfflineData('attendance', offlineData);
-                        console.log('Attendance data stored offline');
-                    }
-                    </script>
-                    """, unsafe_allow_html=True)
-                    
+                    st.markdown(
+                        """
+                        <script>
+                        if (!navigator.onLine && window.offlineManager) {
+                            const offlineData = {
+                                type: 'attendance',
+                                data: """ + str(result).replace("'", '"') + """,
+                                timestamp: new Date().toISOString()
+                            };
+                            window.offlineManager.storeOfflineData('attendance', offlineData);
+                            console.log('Attendance data stored offline');
+                        }
+                        </script>
+                        """,
+                        unsafe_allow_html=True
+                    )
                 else:
                     st.error("❌ Failed to mark attendance")
-                    if 'error' in result:
+                    if result and 'error' in result:
                         st.error(f"Error: {result['error']}")
             else:
                 st.warning("Please upload a photo")
-        
+
         with col2:
             st.info("""
             **Attendance Tips:**
