@@ -7,3 +7,4 @@ Pillow
 qrcode[pil]
 scikit-learn
 schedule
+python-dotenv

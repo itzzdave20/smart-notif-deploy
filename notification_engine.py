@@ -10,6 +10,14 @@ from database import DatabaseManager
 from ai_features import AIFeatures
 from config import NOTIFICATION_API_KEY, NOTIFICATION_ENABLED
 
+# Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    # python-dotenv not installed, skip loading .env file
+    pass
+
 class NotificationEngine:
     def __init__(self):
         self.db = DatabaseManager()
