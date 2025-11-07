@@ -32,6 +32,96 @@ from instructor_auth import InstructorAuth, show_instructor_login, show_instruct
 from instructor_features import show_instructor_class_management, show_instructor_class_attendance, show_instructor_notifications, show_instructor_reports
 from style import GLOBAL_CSS, with_primary_color
 
+SIDEBAR_CUSTOM_CSS = """
+<style>
+section[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #1f2937 0%, #111827 100%);
+    color: #f9fafb;
+    padding: 24px 18px 48px;
+    box-shadow: 4px 0 16px rgba(17, 24, 39, 0.35);
+}
+
+section[data-testid="stSidebar"] h1,
+section[data-testid="stSidebar"] h2,
+section[data-testid="stSidebar"] h3,
+section[data-testid="stSidebar"] p,
+section[data-testid="stSidebar"] label {
+    color: #f9fafb !important;
+}
+
+section[data-testid="stSidebar"] hr {
+    border-color: rgba(249, 250, 251, 0.15) !important;
+}
+
+section[data-testid="stSidebar"] .stButton > button {
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.12);
+    color: #f9fafb;
+    font-weight: 600;
+    box-shadow: none;
+    transition: all 0.2s ease-in-out;
+}
+
+section[data-testid="stSidebar"] .stButton > button:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.45);
+}
+
+section[data-testid="stSidebar"] .stButton > button:focus,
+section[data-testid="stSidebar"] .stButton > button:active {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(255, 107, 107, 0.4);
+}
+
+section[data-testid="stSidebar"] [role="radiogroup"] > label {
+    background: rgba(15, 23, 42, 0.45);
+    border-radius: 12px;
+    padding: 10px 14px;
+    border: 1px solid transparent;
+    margin-bottom: 8px;
+    transition: all 0.2s ease-in-out;
+}
+
+section[data-testid="stSidebar"] [role="radiogroup"] > label:hover {
+    border-color: rgba(255, 255, 255, 0.35);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+section[data-testid="stSidebar"] [role="radiogroup"] > label[data-checked="true"] {
+    border-color: rgba(255, 107, 107, 0.85);
+    background: rgba(255, 107, 107, 0.18);
+    box-shadow: 0 8px 18px rgba(255, 107, 107, 0.25);
+}
+
+section[data-testid="stSidebar"] .stMetric {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 12px;
+}
+
+section[data-testid="stSidebar"] .stMarkdown a {
+    color: #f97316 !important;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+section[data-testid="stSidebar"] .stMarkdown a:hover {
+    color: #fb923c !important;
+    text-decoration: underline;
+}
+
+@media (max-width: 992px) {
+    section[data-testid="stSidebar"] {
+        padding: 18px 16px 36px;
+    }
+}
+</style>
+"""
+
 # Page configuration
 st.set_page_config(
     page_title="Chat Ping (Smart Notification App)",
@@ -409,6 +499,7 @@ st.markdown("""
 
 # Custom CSS
 st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
+st.markdown(SIDEBAR_CUSTOM_CSS, unsafe_allow_html=True)
 
 # Initialize session state
 if 'attendance_system' not in st.session_state:
