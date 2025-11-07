@@ -35,10 +35,10 @@ from style import GLOBAL_CSS, with_primary_color
 SIDEBAR_CUSTOM_CSS = """
 <style>
 section[data-testid="stSidebar"] {
-    background: radial-gradient(circle at top, #1e293b 0%, #0f172a 100%);
-    color: #e2e8f0;
+    background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+    color: #0f172a;
     padding: 24px 18px 48px;
-    box-shadow: 4px 0 20px rgba(15, 23, 42, 0.45);
+    box-shadow: 4px 0 18px rgba(15, 23, 42, 0.25);
 }
 
 section[data-testid="stSidebar"] > div:first-child {
@@ -47,11 +47,11 @@ section[data-testid="stSidebar"] > div:first-child {
 
 section[data-testid="stSidebar"] .block-container,
 section[data-testid="stSidebar"] [data-testid="stSidebarContent"] {
-    background: rgba(15, 23, 42, 0.55);
+    background: rgba(255, 255, 255, 0.78);
     border-radius: 20px;
     padding: 20px 18px 36px;
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(148, 163, 184, 0.25);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(148, 163, 184, 0.35);
 }
 
 section[data-testid="stSidebar"] h1,
@@ -60,11 +60,11 @@ section[data-testid="stSidebar"] h3,
 section[data-testid="stSidebar"] p,
 section[data-testid="stSidebar"] label,
 section[data-testid="stSidebar"] span {
-    color: #e2e8f0 !important;
+    color: #0f172a !important;
 }
 
 section[data-testid="stSidebar"] hr {
-    border-color: rgba(148, 163, 184, 0.25) !important;
+    border-color: rgba(148, 163, 184, 0.4) !important;
 }
 
 section[data-testid="stSidebar"] .stButton > button {
@@ -87,29 +87,29 @@ section[data-testid="stSidebar"] .stButton > button:hover {
 
 section[data-testid="stSidebar"] .stButton > button:focus {
     outline: none;
-    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.4);
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.35);
 }
 
 section[data-testid="stSidebar"] [role="radiogroup"] > label {
-    background: transparent;
+    background: rgba(148, 163, 184, 0.12);
     border-radius: 14px;
     padding: 10px 14px;
     border: 1px solid transparent;
     margin-bottom: 8px;
     transition: all 0.18s ease;
-    color: #e2e8f0 !important;
+    color: #0f172a !important;
 }
 
 section[data-testid="stSidebar"] [role="radiogroup"] > label:hover {
-    border-color: rgba(148, 163, 184, 0.35);
-    background: rgba(148, 163, 184, 0.15);
+    border-color: rgba(100, 116, 139, 0.45);
+    background: rgba(148, 163, 184, 0.24);
 }
 
 section[data-testid="stSidebar"] [role="radiogroup"] > label[data-checked="true"] {
-    border-color: rgba(249, 115, 22, 0.85);
-    background: rgba(249, 115, 22, 0.25);
-    color: #fff !important;
-    box-shadow: 0 10px 22px rgba(249, 115, 22, 0.35);
+    border-color: rgba(249, 115, 22, 0.75);
+    background: rgba(249, 115, 22, 0.2);
+    box-shadow: 0 10px 22px rgba(249, 115, 22, 0.25);
+    color: #0f172a !important;
 }
 
 section[data-testid="stSidebar"] [role="radiogroup"] [role="radio"] {
@@ -117,22 +117,22 @@ section[data-testid="stSidebar"] [role="radiogroup"] [role="radio"] {
 }
 
 section[data-testid="stSidebar"] .stMetric {
-    background: rgba(15, 23, 42, 0.65);
-    border: 1px solid rgba(148, 163, 184, 0.25);
+    background: rgba(226, 232, 240, 0.45);
+    border: 1px solid rgba(148, 163, 184, 0.35);
     border-radius: 18px;
     padding: 16px;
     margin-bottom: 12px;
-    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.45);
+    box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.25);
 }
 
 section[data-testid="stSidebar"] .stMarkdown a {
-    color: #fbbf24 !important;
+    color: #b91c1c !important;
     text-decoration: none;
     font-weight: 600;
 }
 
 section[data-testid="stSidebar"] .stMarkdown a:hover {
-    color: #fde68a !important;
+    color: #7f1d1d !important;
     text-decoration: underline;
 }
 
@@ -145,7 +145,7 @@ section[data-testid="stSidebar"]::-webkit-scrollbar-track {
 }
 
 section[data-testid="stSidebar"]::-webkit-scrollbar-thumb {
-    background-color: rgba(148, 163, 184, 0.35);
+    background-color: rgba(148, 163, 184, 0.45);
     border-radius: 12px;
 }
 
