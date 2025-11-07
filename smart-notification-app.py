@@ -31,6 +31,7 @@ from user_auth import StudentAuth, show_student_login, show_student_logout, chec
 from instructor_auth import InstructorAuth, show_instructor_login, show_instructor_logout, check_instructor_auth, require_instructor_auth, show_instructor_dashboard, show_instructor_profile
 from instructor_features import show_instructor_class_management, show_instructor_class_attendance, show_instructor_notifications, show_instructor_reports
 from style import GLOBAL_CSS, with_primary_color
+from meetings import render_meeting, suggest_room_for_user, jitsi_url, sanitize_room_name
 
 SIDEBAR_CUSTOM_CSS = """
 <style>
@@ -765,6 +766,8 @@ def show_student_interface():
     st.sidebar.markdown(f"**🎓 Major:** {student_info['profile'].get('major', 'N/A')}")
     st.sidebar.markdown(f"**📧 Email:** {student_info.get('email', 'N/A')}")
 
+    render_quick_meet_sidebar("student", student_info['username'])
+
     student_pages = {
         "Dashboard": ("dashboard", show_student_dashboard),
         "Attendance": ("attendance", show_student_attendance),
@@ -789,6 +792,8 @@ def show_student_interface():
     st.session_state.student_page = label_to_key[selected_label]
 
     student_pages[selected_label][1]()
+
+    render_active_quick_meet_embed("student")
 
 def show_instructor_interface():
     """Render the instructor portal interface"""
@@ -818,6 +823,8 @@ def show_instructor_interface():
     profile = instructor_info.get('profile', {})
     st.sidebar.markdown(f"**🏫 Department:** {profile.get('department', 'N/A')}")
     st.sidebar.markdown(f"**📧 Email:** {instructor_info.get('email', 'N/A')}")
+
+    render_quick_meet_sidebar("instructor", instructor_info['username'])
 
     instructor_pages = {
         "Dashboard": ("dashboard", show_instructor_dashboard),
@@ -853,6 +860,8 @@ def show_instructor_interface():
 
     page_function()
 
+    render_active_quick_meet_embed("instructor")
+
 def get_quick_meet_room():
     room_file = os.path.join('notifications', 'quick_meet_room.json')
     if os.path.exists(room_file):
@@ -878,6 +887,71 @@ def clear_quick_meet_room():
     room_file = os.path.join('notifications', 'quick_meet_room.json')
     if os.path.exists(room_file):
         os.remove(room_file)
+
+def render_quick_meet_sidebar(role: str, username: str):
+    """Render Quick Meet controls in the sidebar for students and instructors."""
+    default_room = suggest_room_for_user(username or role)
+    active_room, created_by, timestamp = get_quick_meet_room()
+
+    with st.sidebar.expander("📹 Quick Meet", expanded=False):
+        room_input = st.text_input(
+            "Room name",
+            value=default_room,
+            key=f"{role}_quick_meet_room_input"
+        )
+        room_to_use = sanitize_room_name(room_input or default_room)
+
+        col_start, col_join = st.columns(2)
+        with col_start:
+            if st.button("Start Room", key=f"{role}_quick_meet_start"):
+                set_quick_meet_room(room_to_use, username or role)
+                st.session_state['active_quick_meet_room'] = room_to_use
+                st.success(f"Room '{room_to_use}' is ready")
+        with col_join:
+            if st.button("Join Room", key=f"{role}_quick_meet_join"):
+                st.session_state['active_quick_meet_room'] = room_to_use
+                st.info(f"Joining {room_to_use}")
+
+        if active_room:
+            if timestamp:
+                try:
+                    started_text = datetime.fromisoformat(timestamp).strftime('%Y-%m-%d %H:%M')
+                except Exception:
+                    started_text = timestamp
+            else:
+                started_text = 'N/A'
+
+            created_text = (
+                f"**Active Room:** `{active_room}`\n\n"
+                f"Created by: {created_by or 'Unknown'}\n\n"
+                f"Started: {started_text}"
+            )
+            st.markdown(created_text)
+
+            join_col, clear_col = st.columns(2)
+            with join_col:
+                if st.button("Join Active", key=f"{role}_quick_meet_join_active"):
+                    st.session_state['active_quick_meet_room'] = active_room
+            with clear_col:
+                if st.button("Clear Active", key=f"{role}_quick_meet_clear"):
+                    clear_quick_meet_room()
+                    st.session_state.pop('active_quick_meet_room', None)
+                    st.warning("Active room cleared")
+
+def render_active_quick_meet_embed(role: str):
+    """Render the embedded Quick Meet room if one is active."""
+    room = st.session_state.get('active_quick_meet_room')
+    if not room:
+        return
+
+    st.markdown("---")
+    st.subheader("📹 Quick Meet Room")
+    st.caption(f"Room: `{room}`")
+    render_meeting(room, height=520)
+    st.markdown(f"[Open in new tab]({jitsi_url(room)})")
+
+    if st.button("Close Quick Meet", key=f"{role}_quick_meet_close"):
+        st.session_state.pop('active_quick_meet_room', None)
 
 def main():
     # Connection Status Indicator
