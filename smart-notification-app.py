@@ -35,88 +35,128 @@ from style import GLOBAL_CSS, with_primary_color
 SIDEBAR_CUSTOM_CSS = """
 <style>
 section[data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #1f2937 0%, #111827 100%);
-    color: #f9fafb;
+    background: radial-gradient(circle at top, #1e293b 0%, #0f172a 100%);
+    color: #e2e8f0;
     padding: 24px 18px 48px;
-    box-shadow: 4px 0 16px rgba(17, 24, 39, 0.35);
+    box-shadow: 4px 0 20px rgba(15, 23, 42, 0.45);
+}
+
+section[data-testid="stSidebar"] > div:first-child {
+    height: 100%;
+}
+
+section[data-testid="stSidebar"] .block-container,
+section[data-testid="stSidebar"] [data-testid="stSidebarContent"] {
+    background: rgba(15, 23, 42, 0.55);
+    border-radius: 20px;
+    padding: 20px 18px 36px;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(148, 163, 184, 0.25);
 }
 
 section[data-testid="stSidebar"] h1,
 section[data-testid="stSidebar"] h2,
 section[data-testid="stSidebar"] h3,
 section[data-testid="stSidebar"] p,
-section[data-testid="stSidebar"] label {
-    color: #f9fafb !important;
+section[data-testid="stSidebar"] label,
+section[data-testid="stSidebar"] span {
+    color: #e2e8f0 !important;
 }
 
 section[data-testid="stSidebar"] hr {
-    border-color: rgba(249, 250, 251, 0.15) !important;
+    border-color: rgba(148, 163, 184, 0.25) !important;
 }
 
 section[data-testid="stSidebar"] .stButton > button {
     width: 100%;
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    background: rgba(255, 255, 255, 0.12);
-    color: #f9fafb;
+    border-radius: 14px;
+    border: none;
+    background: linear-gradient(135deg, #fb7185, #f97316);
+    color: #fff;
     font-weight: 600;
-    box-shadow: none;
-    transition: all 0.2s ease-in-out;
+    letter-spacing: 0.3px;
+    padding: 0.75rem 1rem;
+    box-shadow: 0 10px 25px rgba(249, 115, 22, 0.35);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 section[data-testid="stSidebar"] .stButton > button:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.45);
+    transform: translateY(-1px);
+    box-shadow: 0 12px 28px rgba(249, 115, 22, 0.45);
 }
 
-section[data-testid="stSidebar"] .stButton > button:focus,
-section[data-testid="stSidebar"] .stButton > button:active {
+section[data-testid="stSidebar"] .stButton > button:focus {
     outline: none;
-    box-shadow: 0 0 0 2px rgba(255, 107, 107, 0.4);
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.4);
 }
 
 section[data-testid="stSidebar"] [role="radiogroup"] > label {
-    background: rgba(15, 23, 42, 0.45);
-    border-radius: 12px;
+    background: transparent;
+    border-radius: 14px;
     padding: 10px 14px;
     border: 1px solid transparent;
     margin-bottom: 8px;
-    transition: all 0.2s ease-in-out;
+    transition: all 0.18s ease;
+    color: #e2e8f0 !important;
 }
 
 section[data-testid="stSidebar"] [role="radiogroup"] > label:hover {
-    border-color: rgba(255, 255, 255, 0.35);
-    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(148, 163, 184, 0.35);
+    background: rgba(148, 163, 184, 0.15);
 }
 
 section[data-testid="stSidebar"] [role="radiogroup"] > label[data-checked="true"] {
-    border-color: rgba(255, 107, 107, 0.85);
-    background: rgba(255, 107, 107, 0.18);
-    box-shadow: 0 8px 18px rgba(255, 107, 107, 0.25);
+    border-color: rgba(249, 115, 22, 0.85);
+    background: rgba(249, 115, 22, 0.25);
+    color: #fff !important;
+    box-shadow: 0 10px 22px rgba(249, 115, 22, 0.35);
+}
+
+section[data-testid="stSidebar"] [role="radiogroup"] [role="radio"] {
+    color: inherit !important;
 }
 
 section[data-testid="stSidebar"] .stMetric {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 16px;
+    background: rgba(15, 23, 42, 0.65);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 18px;
     padding: 16px;
     margin-bottom: 12px;
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.45);
 }
 
 section[data-testid="stSidebar"] .stMarkdown a {
-    color: #f97316 !important;
+    color: #fbbf24 !important;
     text-decoration: none;
     font-weight: 600;
 }
 
 section[data-testid="stSidebar"] .stMarkdown a:hover {
-    color: #fb923c !important;
+    color: #fde68a !important;
     text-decoration: underline;
+}
+
+section[data-testid="stSidebar"]::-webkit-scrollbar {
+    width: 10px;
+}
+
+section[data-testid="stSidebar"]::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+section[data-testid="stSidebar"]::-webkit-scrollbar-thumb {
+    background-color: rgba(148, 163, 184, 0.35);
+    border-radius: 12px;
 }
 
 @media (max-width: 992px) {
     section[data-testid="stSidebar"] {
-        padding: 18px 16px 36px;
+        padding: 18px 16px 32px;
+    }
+
+    section[data-testid="stSidebar"] .block-container,
+    section[data-testid="stSidebar"] [data-testid="stSidebarContent"] {
+        padding: 16px 14px 28px;
     }
 }
 </style>
