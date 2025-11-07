@@ -442,6 +442,278 @@ def streamlit_rerun():
         raise RuntimeError("Streamlit rerun function not available in this version.")
     rerun_fn()
 
+def show_dashboard():
+    """Admin dashboard wrapper"""
+    show_admin_dashboard()
+
+def show_attendance_management():
+    """Admin attendance management view"""
+    st.header("📋 Attendance Management")
+
+    summary = st.session_state.attendance_system.get_attendance_summary(30)
+    if not summary:
+        st.info("No attendance data available yet. Once records are created, you'll see insights here.")
+        return
+
+    stats = summary.get("stats", {})
+
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Total Records", stats.get("total_attendance", 0))
+    with col2:
+        st.metric("Unique People", stats.get("unique_people", 0))
+    with col3:
+        st.metric("Today's Attendance", stats.get("today_attendance", 0))
+    with col4:
+        st.metric("Tracking Period (days)", stats.get("period_days", 30))
+
+    st.markdown("---")
+
+    today_records = summary.get("today_attendance", [])
+    if today_records:
+        st.subheader("Today's Attendance Entries")
+        df_today = pd.DataFrame(today_records)
+        st.dataframe(df_today, use_container_width=True, hide_index=True)
+    else:
+        st.info("No attendance recorded today yet.")
+
+    st.subheader("Registered People")
+    registered = summary.get("people_list", [])
+    if registered:
+        st.write(", ".join(sorted(registered)))
+    else:
+        st.write("No registered faces yet. Use the Analytics tab to register people.")
+
+    if st.button("🔄 Refresh Attendance Data", key="refresh_admin_attendance"):
+        streamlit_rerun()
+
+def show_notifications():
+    """Admin notification management view"""
+    st.header("🔔 Smart Notifications")
+
+    engine = st.session_state.notification_engine
+    db = st.session_state.db
+
+    with st.form("create_notification_form"):
+        st.subheader("Create Notification")
+        title = st.text_input("Title", placeholder="Enter notification title")
+        message = st.text_area("Message", placeholder="Enter notification message", height=150)
+        notification_type = st.selectbox(
+            "Type",
+            ["info", "attendance", "meeting", "reminder", "alert", "system", "announcement"],
+            index=0
+        )
+        priority = st.slider("Priority", min_value=1, max_value=5, value=3)
+        target_students_raw = st.text_input(
+            "Target Students (optional)",
+            help="Provide comma-separated student usernames to send personal notifications"
+        )
+        ai_enhanced = st.checkbox("Enhance with AI", value=False)
+        submitted = st.form_submit_button("Create Notification", type="primary")
+
+        if submitted:
+            if not title.strip() or not message.strip():
+                st.warning("Please provide both a title and a message.")
+            else:
+                targets = [s.strip() for s in target_students_raw.split(",") if s.strip()]
+                if targets:
+                    success = engine.create_targeted_notification(
+                        title=title.strip(),
+                        message=message.strip(),
+                        target_students=targets,
+                        notification_type=notification_type,
+                        priority=priority,
+                        ai_enhanced=ai_enhanced
+                    )
+                else:
+                    success = engine.create_notification(
+                        title=title.strip(),
+                        message=message.strip(),
+                        notification_type=notification_type,
+                        priority=priority,
+                        ai_enhanced=ai_enhanced
+                    )
+
+                if success:
+                    st.success("✅ Notification created successfully!")
+                    streamlit_rerun()
+                else:
+                    st.error("❌ Failed to create notification. Please check the logs.")
+
+    st.markdown("---")
+    st.subheader("Recent Notifications")
+
+    notifications = db.get_notifications(limit=50)
+    if notifications:
+        df_notifications = pd.DataFrame(notifications)
+        st.dataframe(df_notifications, use_container_width=True)
+    else:
+        st.info("No notifications found yet.")
+
+def show_ai_features():
+    """Admin AI assistance view"""
+    st.header("🤖 AI Features")
+
+    ai = st.session_state.ai_features
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.subheader("Sentiment Analysis")
+        sentiment_text = st.text_area("Text to analyze", key="ai_sentiment_text")
+        if st.button("Analyze Sentiment", key="ai_sentiment_btn", type="primary"):
+            if sentiment_text.strip():
+                result = ai.analyze_sentiment(sentiment_text.strip())
+                st.write("**Sentiment:**", result.get("sentiment", "unknown").title())
+                st.write("**Confidence:**", f"{result.get('confidence', 0)*100:.1f}%")
+                if result.get("scores"):
+                    st.json(result["scores"])
+            else:
+                st.warning("Please enter text to analyze.")
+
+    with col2:
+        st.subheader("Generate Smart Notification")
+        context = st.text_area("Context", key="ai_context_text", height=150)
+        notif_type = st.selectbox(
+            "Notification Type",
+            ["general", "attendance", "meeting", "system", "reminder", "alert"],
+            key="ai_notification_type"
+        )
+        if st.button("Generate Notification", key="ai_generate_btn", type="primary"):
+            if context.strip():
+                suggestion = ai.generate_smart_notification(context.strip(), notification_type=notif_type)
+                st.success("AI-generated suggestion ready")
+                st.write("**Title:**", suggestion.get("title"))
+                st.write("**Message:**", suggestion.get("message"))
+                st.write("**Category:**", suggestion.get("category"))
+                st.write("**Priority:**", suggestion.get("priority"))
+                st.write("**Sentiment:**", suggestion.get("sentiment", "neutral"))
+                st.write("**Suggested Time:**", suggestion.get("suggested_time"))
+                if suggestion.get("keywords"):
+                    st.write("**Keywords:**", ", ".join(suggestion["keywords"]))
+            else:
+                st.warning("Please enter some context text.")
+
+    st.markdown("---")
+    st.subheader("Notification Pattern Insights")
+    notifications = st.session_state.db.get_notifications(limit=200)
+    if notifications:
+        insights = ai.analyze_notification_patterns(notifications)
+        if insights:
+            col1, col2, col3, col4 = st.columns(4)
+            with col1:
+                st.metric("Total Notifications", insights.get("total_notifications", 0))
+            with col2:
+                st.metric("Peak Hour", insights.get("peak_hour", 9))
+            with col3:
+                st.metric("Common Category", insights.get("most_common_category", "general"))
+            with col4:
+                st.metric("Avg Sentiment", f"{insights.get('average_sentiment', 0.0):.2f}")
+        else:
+            st.info("Not enough data for pattern analysis yet.")
+    else:
+        st.info("Create some notifications to unlock AI insights.")
+
+def show_student_interface():
+    """Render the student portal interface"""
+    show_student_logout()
+
+    auth = st.session_state.student_auth
+    session_id = st.session_state.get('student_session_id')
+    if not session_id:
+        st.error("No active student session. Please log in again.")
+        return
+
+    student_info = auth.get_student_info(session_id)
+    if not student_info:
+        st.error("Unable to load student information. Please contact support.")
+        return
+
+    st.sidebar.markdown("---")
+    st.sidebar.markdown(f"**👤 Logged in as:** {student_info['username']}")
+    st.sidebar.markdown(f"**🎓 Major:** {student_info['profile'].get('major', 'N/A')}")
+    st.sidebar.markdown(f"**📧 Email:** {student_info.get('email', 'N/A')}")
+
+    student_pages = {
+        "Dashboard": ("dashboard", show_student_dashboard),
+        "Attendance": ("attendance", show_student_attendance),
+        "Reports": ("reports", show_student_reports),
+        "Profile": ("profile", show_student_profile),
+    }
+
+    current_page_key = st.session_state.get('student_page', 'dashboard')
+    if current_page_key not in {cfg[0] for cfg in student_pages.values()}:
+        current_page_key = 'dashboard'
+        st.session_state.student_page = current_page_key
+
+    page_labels = list(student_pages.keys())
+    label_to_key = {label: cfg[0] for label, cfg in student_pages.items()}
+
+    try:
+        default_index = page_labels.index(next(label for label, key in label_to_key.items() if key == current_page_key))
+    except StopIteration:
+        default_index = 0
+
+    selected_label = st.sidebar.radio("Student Navigation", page_labels, index=default_index)
+    st.session_state.student_page = label_to_key[selected_label]
+
+    student_pages[selected_label][1]()
+
+def show_instructor_interface():
+    """Render the instructor portal interface"""
+    show_instructor_logout()
+
+    auth = st.session_state.instructor_auth
+    session_id = st.session_state.get('instructor_session_id')
+    if not session_id:
+        st.error("No active instructor session. Please log in again.")
+        return
+
+    instructor_info = auth.get_instructor_info(session_id)
+    if not instructor_info:
+        st.error("Unable to load instructor information. Please contact support.")
+        return
+
+    st.sidebar.markdown("---")
+    st.sidebar.markdown(f"**👤 Logged in as:** {instructor_info['username']}")
+    profile = instructor_info.get('profile', {})
+    st.sidebar.markdown(f"**🏫 Department:** {profile.get('department', 'N/A')}")
+    st.sidebar.markdown(f"**📧 Email:** {instructor_info.get('email', 'N/A')}")
+
+    instructor_pages = {
+        "Dashboard": ("dashboard", show_instructor_dashboard),
+        "Class Management": ("class_management", show_instructor_class_management),
+        "Attendance": ("attendance", show_instructor_class_attendance),
+        "Notifications": ("notifications", show_instructor_notifications),
+        "Reports": ("reports", show_instructor_reports),
+        "Profile": ("profile", show_instructor_profile),
+    }
+
+    current_page_key = st.session_state.get('instructor_page', 'dashboard')
+    if current_page_key not in {cfg[0] for cfg in instructor_pages.values()}:
+        current_page_key = 'dashboard'
+        st.session_state.instructor_page = current_page_key
+
+    page_labels = list(instructor_pages.keys())
+    label_to_key = {label: cfg[0] for label, cfg in instructor_pages.items()}
+
+    try:
+        default_index = page_labels.index(next(label for label, key in label_to_key.items() if key == current_page_key))
+    except StopIteration:
+        default_index = 0
+
+    selected_label = st.sidebar.radio("Instructor Navigation", page_labels, index=default_index)
+    st.session_state.instructor_page = label_to_key[selected_label]
+
+    page_function = instructor_pages[selected_label][1]
+
+    if st.session_state.instructor_page == "attendance" and not st.session_state.get('selected_class'):
+        st.info("Select a class from Class Management before taking attendance.")
+        show_instructor_class_management()
+        return
+
+    page_function()
+
 def get_quick_meet_room():
     room_file = os.path.join('notifications', 'quick_meet_room.json')
     if os.path.exists(room_file):
