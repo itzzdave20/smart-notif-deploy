@@ -663,7 +663,15 @@ def show_instructor_interface():
     """Render the instructor portal interface"""
     show_instructor_logout()
 
-    auth = st.session_state.instructor_auth
+    auth = st.session_state.get('instructor_auth')
+    if auth is None:
+        auth = InstructorAuth()
+        st.session_state.instructor_auth = auth
+    else:
+        auth.load_instructor_sessions()
+        auth.load_instructors()
+        auth.load_classes()
+
     session_id = st.session_state.get('instructor_session_id')
     if not session_id:
         st.error("No active instructor session. Please log in again.")
