@@ -502,19 +502,19 @@ def main():
         col1, col2, col3 = st.columns(3)
         with col1:
             st.markdown("### 🛡️ Admin Login")
-            if st.button("Admin Login", type="primary", use_container_width=True):
-                st.session_state.login_type = "admin"
-                st.rerun()
+            if st.button("Admin Login", key="admin_login_btn"):
+                 st.session_state.login_type = "admin"
+                 st.rerun()
         with col2:
             st.markdown("### 🎓 Student Login")
-            if st.button("Student Login", type="primary", use_container_width=True):
-                st.session_state.login_type = "student"
-                st.rerun()
+            if st.button("Student Login", key="student_login_btn"):
+                 st.session_state.login_type = "student"
+                 st.rerun()
         with col3:
             st.markdown("### 🎓 Instructor Login")
-            if st.button("Instructor Login", type="primary", use_container_width=True):
-                st.session_state.login_type = "instructor"
-                st.rerun()
+            if st.button("Instructor Login", key="instructor_login_btn"):
+                 st.session_state.login_type = "instructor"
+                 st.rerun()
         # Show login form based on selected type
         if 'login_type' in st.session_state:
             if st.session_state.login_type == "admin":
@@ -832,24 +832,24 @@ def show_attendance_management():
             person_name = st.text_input("Person Name", placeholder="Enter full name")
             uploaded_file = st.file_uploader("Upload Photo", type=['jpg', 'jpeg', 'png'], key="register_person_photo")
             
-            if st.button("Register Person", type="primary"):
-                if person_name and uploaded_file:
-                    # Convert uploaded file to bytes
-                    image_bytes = uploaded_file.read()
-                    
-                    success = st.session_state.attendance_system.register_person(
-                        person_name, image_bytes=image_bytes
-                    )
-                    
-                    if success:
-                        st.success(f"✅ {person_name} registered successfully!")
-                        st.session_state.notification_engine.create_system_notification(
-                            "Person Registered", f"{person_name} has been registered for attendance tracking"
-                        )
-                    else:
-                        st.error("❌ Failed to register person. Please check the image and try again.")
-                else:
-                    st.warning("Please provide both name and photo")
+            if st.button("Register Person", key="register_person_btn"):
+                 if person_name and uploaded_file:
+                     # Convert uploaded file to bytes
+                     image_bytes = uploaded_file.read()
+                     
+                     success = st.session_state.attendance_system.register_person(
+                         person_name, image_bytes=image_bytes
+                     )
+                     
+                     if success:
+                         st.success(f"✅ {person_name} registered successfully!")
+                         st.session_state.notification_engine.create_system_notification(
+                             "Person Registered", f"{person_name} has been registered for attendance tracking"
+                         )
+                     else:
+                         st.error("❌ Failed to register person. Please check the image and try again.")
+                 else:
+                     st.warning("Please provide both name and photo")
         
         with col2:
             st.info("""
@@ -868,12 +868,12 @@ def show_attendance_management():
         with col1:
             uploaded_attendance = st.file_uploader("Upload Photo for Attendance", type=['jpg', 'jpeg', 'png'], key="admin_attendance_photo")
             
-        if st.button("Mark Attendance", type="primary"):
-            if uploaded_attendance:
-                image_bytes = uploaded_attendance.read()
-                
-                with st.spinner("Processing attendance..."):
-                    result = st.session_state.attendance_system.mark_attendance(image_bytes=image_bytes)
+        if st.button("Mark Attendance", key="mark_attendance_btn_admin"):
+             if uploaded_attendance:
+                 image_bytes = uploaded_attendance.read()
+                 
+                 with st.spinner("Processing attendance..."):
+                     result = st.session_state.attendance_system.mark_attendance(image_bytes=image_bytes)
                 
                 if result['success']:
                     st.success("✅ Attendance marked successfully!")
@@ -958,7 +958,7 @@ def show_attendance_management():
     with tab4:
         st.subheader("Live Camera Capture")
         
-        if st.button("Capture from Camera", type="primary"):
+        if st.button("Capture from Camera", key="capture_from_camera_btn"):
             with st.spinner("Capturing from camera..."):
                 frame = st.session_state.attendance_system.capture_from_camera()
             
@@ -968,7 +968,7 @@ def show_attendance_management():
                 st.image(frame_rgb, caption="Captured Image", use_container_width=True)
                 
                 # Process the captured image
-                if st.button("Process Captured Image"):
+                if st.button("Process Captured Image", key="process_captured_image_btn"):
                     # Convert frame to bytes
                     _, buffer = cv2.imencode('.jpg', frame)
                     image_bytes = buffer.tobytes()
@@ -1032,7 +1032,7 @@ def show_notifications():
             if schedule_notification:
                 scheduled_time = st.write("📅 Scheduled for:", scheduled_datetime)
             
-            if st.button("Create Notification", type="primary"):
+            if st.button("Create Notification", key="create_notification_btn"):
                 if title and message:
                     success = st.session_state.notification_engine.create_notification(
                         title=title,
@@ -1159,7 +1159,7 @@ def show_notifications():
         
         with col1:
             st.write("**Process Notification Queue**")
-            if st.button("Process All Pending", type="primary"):
+            if st.button("Process All Pending", key="process_all_pending_btn"):
                 with st.spinner("Processing notifications..."):
                     sent_count = st.session_state.notification_engine.process_notification_queue()
                 st.success(f"✅ Sent {sent_count} notifications!")
@@ -1169,7 +1169,7 @@ def show_notifications():
         
         with col2:
             st.write("**Test Notification System**")
-            if st.button("Run System Test", type="secondary"):
+            if st.button("Run System Test", key="run_system_test_btn"):
                 with st.spinner("Testing system..."):
                     test_results = st.session_state.notification_engine.test_notification_system()
                 
@@ -1190,4 +1190,152 @@ def show_ai_features():
         st.subheader("AI Chatbot — Ask questions, get help with assignments, brainstorm")
         if 'ai_chat_history' not in st.session_state:
             st.session_state.ai_chat_history = []  # list of {"role": "user"|"assistant", "text": "..."}
+        chat_history = st.session_state.ai_chat_history
+        
+        # Display chat history
+        for chat in chat_history:
+            with st.chat_message(chat["role"]):
+                st.markdown(chat["text"])
+        
+        # User input
+        prompt = st.text_input("You:", placeholder="Ask me anything...", key="user_input")
+        
+        if st.button("Send", key="send_msg"):
+            if prompt:
+                # Add user message to chat history
+                chat_history.append({"role": "user", "text": prompt})
+                
+                # Generate AI response
+                with st.spinner("AI is typing..."):
+                    response = st.session_state.ai_features.chat_with_gpt(chat_history)
+                
+                # Add AI response to chat history
+                chat_history.append({"role": "assistant", "text": response})
+                
+                # Clear input field
+                st.session_state.user_input = ""
+                
+                # Update chat history display
+                st.experimental_rerun()
+            else:
+                st.warning("Please enter a message")
+    
+    # --- Sentiment Analysis Tab ---
+    with tab_sentiment:
+        st.subheader("Sentiment Analysis — Analyze text sentiment, get insights")
+        
+        text_to_analyze = st.text_area("Enter text for sentiment analysis", height=150)
+        
+        if st.button("Analyze Sentiment", key="analyze_sentiment"):
+            if text_to_analyze:
+                with st.spinner("Analyzing sentiment..."):
+                    result = st.session_state.ai_features.analyze_sentiment(text_to_analyze)
+                
+                st.write("**Sentiment Analysis Result:**")
+                st.write(f"Overall Sentiment: {result['sentiment']}")
+                st.write(f"Positive Score: {result['positive']:.2f}")
+                st.write(f"Negative Score: {result['negative']:.2f}")
+                st.write(f"Neutral Score: {result['neutral']:.2f}")
+                
+                # Show sentiment distribution chart
+                fig = go.Figure(data=[
+                    go.Pie(labels=list(result['emotion'].keys()), values=list(result['emotion'].values()), hole=.3)
+                ])
+                fig.update_layout(title_text="Emotion Distribution", title_x=0.5)
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.warning("Please enter some text for analysis")
+        
+        st.markdown("""
+        **Tip:** You can use sentiment analysis to:
+        - Analyze customer feedback
+        - Monitor brand sentiment
+        - Improve communication tone
+        """)
+    
+    # --- Smart Scheduling Tab ---
+    with tab_scheduling:
+        st.subheader("Smart Scheduling — Schedule meetings, events, with AI suggestions")
+        
+        # Meeting details
+        title = st.text_input("Meeting Title", placeholder="Enter meeting title")
+        description = st.text_area("Description", placeholder="Enter meeting description", height=100)
+        
+        # Date and time pickers
+        date = st.date_input("Date", datetime.now())
+        start_time = st.time_input("Start Time", datetime.now().time())
+        end_time = st.time_input("End Time", datetime.now().time())
+        
+        # Attendees
+        attendees = st.text_input("Attendees (comma-separated)", placeholder="Enter email addresses")
+        
+        if st.button("Suggest Optimal Time", key="suggest_time"):
+            if title and date and start_time and end_time and attendees:
+                with st.spinner("AI is suggesting optimal time..."):
+                    # Parse attendees
+                    attendee_list = [a.strip() for a in attendees.split(",")]
+                    
+                    # Call AI scheduling function
+                    suggestion = st.session_state.ai_features.schedule_meeting_ai(
+                        title, description, date, start_time, end_time, attendee_list
+                    )
+                
+                if suggestion:
+                    st.success("✅ Optimal time suggested!")
+                    st.write(f"**Suggested Time:** {suggestion['start_time']} - {suggestion['end_time']}")
+                    st.write(f"**Duration:** {suggestion['duration']} minutes")
+                else:
+                    st.warning("AI could not find an optimal time. Please try again.")
+            else:
+                st.warning("Please fill in all meeting details")
+        
+        st.markdown("""
+        **Tip:** Use smart scheduling to:
+        - Find optimal meeting times
+        - Avoid scheduling conflicts
+        - Save time on back-and-forth emails
+        """)
+    
+    # --- Content Generation Tab ---
+    with tab_gen:
+        st.subheader("Content Generation — Generate text content, summaries, ideas")
+        
+        content_type = st.selectbox(
+            "Select content type",
+            ["Article", "Blog Post", "Summary", "Ideas"]
+        )
+        
+        tone = st.selectbox(
+            "Select tone",
+            ["Formal", "Informal", "Friendly", "Professional"]
+        )
+        
+        keywords = st.text_input("Keywords (comma-separated)", placeholder="Enter keywords for content")
+        
+        if st.button("Generate Content", key="generate_content"):
+            if content_type and tone and keywords:
+                with st.spinner("Generating content..."):
+                    # Parse keywords
+                    keyword_list = [k.strip() for k in keywords.split(",")]
+                    
+                    # Call AI content generation function
+                    content = st.session_state.ai_features.generate_content_ai(
+                        content_type, tone, keyword_list
+                    )
+                
+                if content:
+                    st.success("✅ Content generated!")
+                    st.write("**Generated Content:**")
+                    st.write(content)
+                else:
+                    st.warning("AI could not generate content. Please try again.")
+            else:
+                st.warning("Please fill in all fields")
+        
+        st.markdown("""
+        **Tip:** Content generation can be used for:
+        - Creating articles or blog posts
+        - Summarizing long texts
+        - Generating content ideas
+        """)
 
