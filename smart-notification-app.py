@@ -670,32 +670,12 @@ def show_admin_interface():
                             # Create notification
                             st.session_state.notification_engine.create_attendance_notification(result)
 
-                            # Store offline if needed                            # ...existing code...
-                                    with col1:
-                                        st.markdown("### 🛡️ Admin Login")
-                                        if st.button("Admin Login", key="admin_login_btn"):
-                                            st.session_state.login_type = "admin"
-                            -                st.rerun()
-                            +                st.experimental_rerun()
-                                    with col2:
-                                        st.markdown("### 🎓 Student Login")
-                                        if st.button("Student Login", key="student_login_btn"):
-                                            st.session_state.login_type = "student"
-                            -                st.rerun()
-                            +                st.experimental_rerun()
-                                    with col3:
-                                        st.markdown("### 🎓 Instructor Login")
-                                        if st.button("Instructor Login", key="instructor_login_btn"):
-                                            st.session_state.login_type = "instructor"
-                            -                st.rerun()
-                            +                st.experimental_rerun()
-                            # ...existing code...
-                            
-                                    with col3:
-                                        if st.button("Refresh Data", key="refresh_attendance_data"):
-                            -                st.rerun()
-                            +                st.experimental_rerun()
-                            # ...existing code...
+                            # Store offline if needed (handled via frontend OfflineManager)
+                            st.session_state["last_attendance_result"] = result
+                        else:
+                            st.error("❌ Unable to mark attendance. Please try again.")
+                    else:
+                        st.warning("Please upload a photo before marking attendance.")
 
 # Ensure app runs when executed
 if __name__ == "__main__":
