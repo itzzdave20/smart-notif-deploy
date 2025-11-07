@@ -436,6 +436,12 @@ if 'qr_functions' not in st.session_state:
     st.session_state.validate_qr_code = validate_qr_code
     st.session_state.mark_attendance_from_qr = mark_attendance_from_qr
 
+def streamlit_rerun():
+    rerun_fn = getattr(st, "experimental_rerun", None) or getattr(st, "rerun", None)
+    if rerun_fn is None:
+        raise RuntimeError("Streamlit rerun function not available in this version.")
+    rerun_fn()
+
 def get_quick_meet_room():
     room_file = os.path.join('notifications', 'quick_meet_room.json')
     if os.path.exists(room_file):
@@ -504,17 +510,17 @@ def main():
             st.markdown("### 🛡️ Admin Login")
             if st.button("Admin Login", key="admin_login_btn"):
                 st.session_state.login_type = "admin"
-                st.experimental_rerun()
+                streamlit_rerun()
         with col2:
             st.markdown("### 🎓 Student Login")
             if st.button("Student Login", key="student_login_btn"):
                 st.session_state.login_type = "student"
-                st.experimental_rerun()
+                streamlit_rerun()
         with col3:
             st.markdown("### 🎓 Instructor Login")
             if st.button("Instructor Login", key="instructor_login_btn"):
                 st.session_state.login_type = "instructor"
-                st.experimental_rerun()
+                streamlit_rerun()
         # Show login form based on selected type
         if 'login_type' in st.session_state:
             if st.session_state.login_type == "admin":
