@@ -24,9 +24,32 @@ class DatabaseManager:
                 date DATE NOT NULL,
                 status TEXT DEFAULT 'present',
                 confidence REAL,
-                image_path TEXT
+                image_path TEXT,
+                class_code TEXT,
+                method TEXT,
+                selfie_verified BOOLEAN,
+                face_confidence REAL,
+                session_id TEXT,
+                instructor TEXT
             )
         ''')
+        
+        # Add new columns if they don't exist (for existing databases)
+        new_columns = [
+            ('class_code', 'TEXT'),
+            ('method', 'TEXT'),
+            ('selfie_verified', 'BOOLEAN'),
+            ('face_confidence', 'REAL'),
+            ('session_id', 'TEXT'),
+            ('instructor', 'TEXT')
+        ]
+        
+        for column_name, column_type in new_columns:
+            try:
+                cursor.execute(f'ALTER TABLE attendance ADD COLUMN {column_name} {column_type}')
+            except sqlite3.OperationalError:
+                # Column already exists
+                pass
         
         # Create notifications table
         cursor.execute('''
@@ -102,7 +125,7 @@ class DatabaseManager:
             return False
     
     def add_attendance_record(self, attendance_data: Dict) -> bool:
-        """Add QR code attendance record"""
+        """Add QR code attendance record with selfie verification"""
         try:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
@@ -111,15 +134,24 @@ class DatabaseManager:
             today = date.today()
             
             cursor.execute('''
-                INSERT INTO attendance (person_name, timestamp, date, confidence, image_path, status)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO attendance (
+                    person_name, timestamp, date, confidence, image_path, status,
+                    class_code, method, selfie_verified, face_confidence, session_id, instructor
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
-                attendance_data["student_username"], 
+                attendance_data.get("student_username", attendance_data.get("person_name", "")), 
                 now, 
                 today, 
-                1.0, 
-                f"qr_session_{attendance_data['session_id']}", 
-                "present"
+                attendance_data.get("face_confidence", attendance_data.get("confidence", 1.0)), 
+                f"qr_session_{attendance_data.get('session_id', 'unknown')}", 
+                "present",
+                attendance_data.get("class_code"),
+                attendance_data.get("method", "qr_code_selfie"),
+                attendance_data.get("selfie_verified", False),
+                attendance_data.get("face_confidence", 0.0),
+                attendance_data.get("session_id"),
+                attendance_data.get("instructor")
             ))
             
             conn.commit()
@@ -128,6 +160,52 @@ class DatabaseManager:
         except Exception as e:
             print(f"Error adding attendance record: {e}")
             return False
+    
+    def get_attendance_records(self, limit: int = None) -> List[Dict]:
+        """Get all attendance records"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            query = '''
+                SELECT person_name, timestamp, confidence, status, image_path,
+                       class_code, method, selfie_verified, face_confidence, session_id, instructor
+                FROM attendance
+                ORDER BY timestamp DESC
+            '''
+            
+            if limit:
+                query += f' LIMIT {limit}'
+            
+            cursor.execute(query)
+            
+            records = []
+            for row in cursor.fetchall():
+                record = {
+                    'student_username': row[0],
+                    'person_name': row[0],
+                    'timestamp': row[1].isoformat() if isinstance(row[1], datetime) else str(row[1]),
+                    'confidence': row[2],
+                    'status': row[3],
+                    'image_path': row[4] if len(row) > 4 else None
+                }
+                
+                # Add new fields if they exist
+                if len(row) > 5:
+                    record['class_code'] = row[5]
+                    record['method'] = row[6]
+                    record['selfie_verified'] = bool(row[7]) if row[7] is not None else False
+                    record['face_confidence'] = row[8] if row[8] is not None else 0.0
+                    record['session_id'] = row[9]
+                    record['instructor'] = row[10]
+                
+                records.append(record)
+            
+            conn.close()
+            return records
+        except Exception as e:
+            print(f"Error getting attendance records: {e}")
+            return []
     
     def get_attendance_today(self) -> List[Dict]:
         """Get today's attendance records"""

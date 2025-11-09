@@ -799,7 +799,7 @@ def show_student_dashboard():
     st.info("Your recent activity will appear here as you use the system.")
 
 def show_student_attendance():
-    """Show student attendance interface"""
+    """Show student attendance interface with QR code and selfie"""
     st.header("📝 My Attendance")
     
     auth = st.session_state.student_auth
@@ -816,57 +816,247 @@ def show_student_attendance():
         st.write(f"Debug: Session ID: {session_id}")
         return
     
+    student_username = student_info['username']
+    
     col1, col2 = st.columns([1, 1])
     
     with col1:
-        st.subheader("Mark Attendance")
+        st.subheader("📱 Mark Attendance")
+        st.caption("Scan QR code and take a selfie to mark your attendance")
         
-        uploaded_file = st.file_uploader("Upload Photo for Attendance", type=['jpg', 'jpeg', 'png'], key="student_attendance_photo_auth")
+        # QR Code Input Section
+        st.markdown("### Step 1: Scan QR Code")
+        st.info("📱 Use your phone camera to scan the QR code displayed by your instructor")
         
-        if st.button("Mark Attendance", type="primary"):
-            if uploaded_file:
-                image_bytes = uploaded_file.read()
-                
-                with st.spinner("Processing attendance..."):
-                    # Use the attendance system to process the image
-                    result = st.session_state.attendance_system.mark_attendance(image_bytes=image_bytes)
-                
-                if result['success']:
-                    st.success("✅ Attendance marked successfully!")
-                    
-                    # Show recognized faces
-                    if result['recognized_faces']:
-                        st.write("**Recognized:**")
-                        for face in result['recognized_faces']:
-                            st.write(f"• {face['name']} (Confidence: {face['confidence']:.2f})")
-                    
-                    # Show unknown faces
-                    if result['unknown_faces']:
-                        st.warning(f"⚠️ {len(result['unknown_faces'])} unknown faces detected")
-                    
-                    # Create notification
-                    st.session_state.notification_engine.create_attendance_notification(result)
-                else:
-                    st.error("❌ Failed to mark attendance")
+        qr_method = st.radio(
+            "How do you want to input the QR code?",
+            ["Paste QR Code Data", "Upload QR Code Image"],
+            key="qr_input_method"
+        )
+        
+        qr_data_input = None
+        
+        if qr_method == "Paste QR Code Data":
+            qr_data_input = st.text_area(
+                "Paste QR Code Data",
+                placeholder="Paste the QR code data here after scanning...",
+                height=100,
+                key="qr_data_paste"
+            )
+        else:
+            qr_image = st.file_uploader(
+                "Upload QR Code Image",
+                type=['jpg', 'jpeg', 'png'],
+                key="qr_code_image"
+            )
+            if qr_image:
+                st.image(qr_image, caption="Uploaded QR Code", width=200)
+                st.info("💡 Note: QR code image processing requires additional setup. Please use 'Paste QR Code Data' method for now.")
+        
+        st.markdown("---")
+        
+        # Selfie Photo Section
+        st.markdown("### Step 2: Take Selfie")
+        st.info("📸 Take a selfie photo to verify your identity")
+        
+        selfie_method = st.radio(
+            "How do you want to capture your selfie?",
+            ["Upload Photo", "Use Camera (if available)"],
+            key="selfie_method"
+        )
+        
+        selfie_image = None
+        
+        if selfie_method == "Upload Photo":
+            selfie_image = st.file_uploader(
+                "Upload Your Selfie",
+                type=['jpg', 'jpeg', 'png'],
+                key="student_selfie_upload",
+                help="Upload a clear selfie photo of yourself"
+            )
+            if selfie_image:
+                st.image(selfie_image, caption="Your Selfie", width=200)
+        else:
+            # Camera input (Streamlit camera input)
+            try:
+                camera_photo = st.camera_input("Take a selfie", key="student_selfie_camera")
+                if camera_photo:
+                    selfie_image = camera_photo
+                    st.success("✅ Selfie captured!")
+            except Exception as e:
+                st.warning("Camera not available. Please use 'Upload Photo' method instead.")
+                selfie_image = st.file_uploader(
+                    "Upload Your Selfie",
+                    type=['jpg', 'jpeg', 'png'],
+                    key="student_selfie_fallback"
+                )
+        
+        st.markdown("---")
+        
+        # Mark Attendance Button
+        if st.button("✅ Mark Attendance", type="primary", use_container_width=True):
+            if not qr_data_input and not qr_image:
+                st.error("❌ Please scan or paste the QR code first!")
+            elif not selfie_image:
+                st.error("❌ Please take or upload your selfie photo!")
             else:
-                st.warning("Please upload a photo")
+                with st.spinner("Processing attendance..."):
+                    try:
+                        # Validate QR code
+                        if qr_method == "Paste QR Code Data":
+                            # Parse QR code data
+                            try:
+                                if isinstance(qr_data_input, str):
+                                    qr_data = json.loads(qr_data_input)
+                                else:
+                                    qr_data = qr_data_input
+                            except json.JSONDecodeError:
+                                st.error("❌ Invalid QR code data format. Please check and try again.")
+                                return
+                        else:
+                            st.error("❌ QR code image processing not yet implemented. Please use 'Paste QR Code Data' method.")
+                            return
+                        
+                        # Validate QR code
+                        is_valid, qr_result = st.session_state.validate_qr_code(qr_data)
+                        
+                        if not is_valid:
+                            st.error(f"❌ {qr_result}")
+                            return
+                        
+                        # Verify student is enrolled
+                        class_code = qr_result["class_code"]
+                        from instructor_auth import InstructorAuth
+                        instructor_auth = InstructorAuth()
+                        
+                        if class_code not in instructor_auth.classes:
+                            st.error("❌ Class not found")
+                            return
+                        
+                        if student_username not in instructor_auth.classes[class_code]["enrolled_students"]:
+                            st.error("❌ You are not enrolled in this class")
+                            return
+                        
+                        # Process selfie with face recognition
+                        selfie_bytes = selfie_image.read()
+                        face_result = st.session_state.attendance_system.mark_attendance(image_bytes=selfie_bytes)
+                        
+                        # Check if student is recognized
+                        student_recognized = False
+                        if face_result.get('success') and face_result.get('recognized_faces'):
+                            for face in face_result['recognized_faces']:
+                                if face['name'].lower() == student_username.lower():
+                                    student_recognized = True
+                                    break
+                        
+                        # Mark attendance using QR code data
+                        success, message = st.session_state.mark_attendance_from_qr(student_username, qr_result)
+                        
+                        if success:
+                            # Add selfie verification info to attendance record
+                            attendance_record = {
+                                "student_username": student_username,
+                                "class_code": class_code,
+                                "instructor": qr_result["instructor"],
+                                "session_id": qr_result["session_id"],
+                                "timestamp": datetime.now().isoformat(),
+                                "method": "qr_code_selfie",
+                                "selfie_verified": student_recognized,
+                                "face_confidence": face_result.get('recognized_faces', [{}])[0].get('confidence', 0) if face_result.get('recognized_faces') else 0
+                            }
+                            
+                            # Update database record
+                            st.session_state.db.add_attendance_record(attendance_record)
+                            
+                            if student_recognized:
+                                st.success("✅ Attendance marked successfully! Your identity has been verified.")
+                            else:
+                                st.warning("⚠️ Attendance marked, but face recognition couldn't verify your identity. Please ensure you're using a clear selfie.")
+                            
+                            st.balloons()
+                        else:
+                            st.error(f"❌ {message}")
+                            
+                    except Exception as e:
+                        st.error(f"❌ Error marking attendance: {str(e)}")
+                        import traceback
+                        st.error(traceback.format_exc())
     
     with col2:
-        st.subheader("My Attendance Records")
+        st.subheader("📊 My Attendance Records")
         
-        # Get student's attendance records
-        attendance_summary = st.session_state.attendance_system.get_attendance_summary(30)
-        student_records = []
-        
-        if attendance_summary.get('today_attendance'):
-            for record in attendance_summary['today_attendance']:
-                if record['person_name'].lower() == student_info['username'].lower():
-                    student_records.append(record)
-        
-        if student_records:
-            df = pd.DataFrame(student_records)
-            st.dataframe(df, use_container_width=True)
-        else:
+        # Get student's attendance records from database
+        try:
+            all_records = st.session_state.db.get_attendance_records()
+            student_records = [
+                record for record in all_records 
+                if record.get('student_username', '').lower() == student_username.lower()
+            ]
+            
+            # Sort by timestamp (newest first)
+            student_records.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
+            
+            if student_records:
+                # Show recent records
+                st.write(f"**Total Records:** {len(student_records)}")
+                
+                # Display as dataframe
+                display_records = []
+                for record in student_records[:20]:  # Show last 20
+                    timestamp = record.get('timestamp', '')
+                    date_str = 'N/A'
+                    time_str = 'N/A'
+                    
+                    if timestamp:
+                        try:
+                            if isinstance(timestamp, str):
+                                dt = datetime.fromisoformat(timestamp)
+                            else:
+                                dt = timestamp
+                            date_str = dt.strftime('%Y-%m-%d')
+                            time_str = dt.strftime('%H:%M:%S')
+                        except:
+                            date_str = str(timestamp)[:10] if len(str(timestamp)) >= 10 else 'N/A'
+                            time_str = str(timestamp)[11:19] if len(str(timestamp)) >= 19 else 'N/A'
+                    
+                    display_records.append({
+                        'Class': record.get('class_code', 'N/A'),
+                        'Date': date_str,
+                        'Time': time_str,
+                        'Method': record.get('method', 'N/A').replace('_', ' ').title(),
+                        'Verified': '✅' if record.get('selfie_verified') else '❌'
+                    })
+                
+                df = pd.DataFrame(display_records)
+                st.dataframe(df, use_container_width=True, hide_index=True)
+                
+                # Show statistics
+                st.markdown("---")
+                col_stat1, col_stat2, col_stat3 = st.columns(3)
+                with col_stat1:
+                    today_count = 0
+                    for r in student_records:
+                        if r.get('timestamp'):
+                            try:
+                                if isinstance(r['timestamp'], str):
+                                    record_date = datetime.fromisoformat(r['timestamp']).date()
+                                else:
+                                    record_date = r['timestamp'].date() if hasattr(r['timestamp'], 'date') else datetime.now().date()
+                                if record_date == datetime.now().date():
+                                    today_count += 1
+                            except:
+                                pass
+                    st.metric("Today", today_count)
+                with col_stat2:
+                    verified_count = len([r for r in student_records if r.get('selfie_verified')])
+                    st.metric("Verified", verified_count)
+                with col_stat3:
+                    qr_count = len([r for r in student_records if r.get('method') == 'qr_code_selfie'])
+                    st.metric("QR + Selfie", qr_count)
+            else:
+                st.info("No attendance records found for you")
+        except Exception as e:
+            st.error(f"Error loading attendance records: {str(e)}")
             st.info("No attendance records found for you")
 
 def show_student_reports():
