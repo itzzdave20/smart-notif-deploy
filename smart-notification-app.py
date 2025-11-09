@@ -774,7 +774,6 @@ def show_student_interface():
         "Dashboard": ("dashboard", show_student_dashboard),
         "Classes": ("classes", show_student_classes),
         "AI Chatbot": ("ai_chatbot", lambda: show_ai_chatbot("student")),
-        "Smart Scheduling": ("scheduling", lambda: show_smart_scheduling("student", student_info['username'])),
         "Attendance": ("attendance", show_student_attendance),
         "Reports": ("reports", show_student_reports),
         "Profile": ("profile", show_student_profile),
