@@ -408,3 +408,124 @@ class AIFeatures:
         except Exception as e:
             print(f"Error optimizing notification schedule: {e}")
             return ['09:00', '13:00', '17:00']
+    
+    def chat_with_ai(self, user_message: str, conversation_history: List[Dict] = None) -> Dict:
+        """AI Chatbot - Answer questions, help with assignments, etc."""
+        try:
+            if conversation_history is None:
+                conversation_history = []
+            
+            # Simple rule-based responses for common questions
+            user_message_lower = user_message.lower()
+            
+            # Assignment help
+            if any(word in user_message_lower for word in ['assignment', 'homework', 'project', 'essay']):
+                response = self._handle_assignment_help(user_message)
+            
+            # Class-related questions
+            elif any(word in user_message_lower for word in ['class', 'course', 'schedule', 'enroll']):
+                response = self._handle_class_question(user_message)
+            
+            # Attendance questions
+            elif any(word in user_message_lower for word in ['attendance', 'present', 'absent', 'mark']):
+                response = self._handle_attendance_question(user_message)
+            
+            # General questions
+            elif any(word in user_message_lower for word in ['what', 'how', 'why', 'when', 'where', 'who']):
+                response = self._handle_general_question(user_message)
+            
+            # Greetings
+            elif any(word in user_message_lower for word in ['hello', 'hi', 'hey', 'greetings']):
+                response = "Hello! I'm your AI assistant. I can help you with assignments, classes, attendance, and more. How can I assist you today?"
+            
+            # Default response
+            else:
+                response = self._generate_contextual_response(user_message, conversation_history)
+            
+            return {
+                'response': response,
+                'timestamp': datetime.now().isoformat(),
+                'confidence': 0.8
+            }
+            
+        except Exception as e:
+            print(f"Error in AI chat: {e}")
+            return {
+                'response': "I apologize, but I encountered an error. Please try rephrasing your question.",
+                'timestamp': datetime.now().isoformat(),
+                'confidence': 0.0,
+                'error': str(e)
+            }
+    
+    def _handle_assignment_help(self, message: str) -> str:
+        """Handle assignment-related questions"""
+        responses = [
+            "I can help you with your assignment! Here are some tips:\n"
+            "1. Break down the assignment into smaller tasks\n"
+            "2. Create a timeline for completion\n"
+            "3. Research thoroughly before writing\n"
+            "4. Review and edit your work before submitting\n\n"
+            "What specific part of your assignment do you need help with?",
+            
+            "For assignment help, I recommend:\n"
+            "• Understanding the requirements clearly\n"
+            "• Organizing your thoughts before writing\n"
+            "• Citing sources properly\n"
+            "• Proofreading for errors\n\n"
+            "Feel free to ask me about any specific aspect!",
+            
+            "I'm here to help with your assignment! Some strategies:\n"
+            "• Start early to avoid last-minute stress\n"
+            "• Create an outline first\n"
+            "• Write a draft, then revise\n"
+            "• Get feedback from peers or instructors\n\n"
+            "What would you like help with specifically?"
+        ]
+        return responses[0]  # Return first response for now
+    
+    def _handle_class_question(self, message: str) -> str:
+        """Handle class-related questions"""
+        return ("I can help you with class-related questions! I can assist with:\n"
+                "• Finding class schedules\n"
+                "• Enrollment information\n"
+                "• Class requirements\n"
+                "• Instructor contact details\n\n"
+                "What specific information do you need about your classes?")
+    
+    def _handle_attendance_question(self, message: str) -> str:
+        """Handle attendance-related questions"""
+        return ("For attendance questions, I can help you:\n"
+                "• Check your attendance records\n"
+                "• Understand attendance policies\n"
+                "• Mark your attendance\n"
+                "• View attendance history\n\n"
+                "What would you like to know about attendance?")
+    
+    def _handle_general_question(self, message: str) -> str:
+        """Handle general questions"""
+        return ("I'm here to help! I can assist with:\n"
+                "• Academic questions and assignments\n"
+                "• Class and schedule information\n"
+                "• Attendance tracking\n"
+                "• General inquiries\n\n"
+                "Could you provide more details about what you need help with?")
+    
+    def _generate_contextual_response(self, message: str, history: List[Dict]) -> str:
+        """Generate contextual response based on conversation history"""
+        # Extract keywords from message
+        keywords = self.extract_keywords(message, max_keywords=5)
+        
+        # Analyze sentiment
+        sentiment = self.analyze_sentiment(message)
+        
+        # Generate response based on context
+        if sentiment['sentiment'] == 'positive':
+            response = f"Great! I'm glad to help. Based on your message about {', '.join(keywords[:3]) if keywords else 'this topic'}, "
+        elif sentiment['sentiment'] == 'negative':
+            response = "I understand this might be challenging. Let me help you with "
+        else:
+            response = "I can help you with "
+        
+        response += f"your question. Could you provide more details so I can assist you better?"
+        
+        return response

@@ -28,6 +28,8 @@ from database import DatabaseManager
 from config import STREAMLIT_THEME
 from admin_auth import AdminAuth, show_admin_login, show_admin_logout, check_admin_auth, require_admin_auth, show_admin_dashboard, show_user_management, show_system_settings, show_system_logs
 from user_auth import StudentAuth, show_student_login, show_student_logout, check_student_auth, require_student_auth, show_student_profile, show_student_dashboard, show_student_attendance, show_student_reports, show_student_classes
+from ai_chatbot_ui import show_ai_chatbot
+from smart_scheduling_ui import show_smart_scheduling
 from instructor_auth import InstructorAuth, show_instructor_login, show_instructor_logout, check_instructor_auth, require_instructor_auth, show_instructor_dashboard, show_instructor_profile
 from instructor_features import show_instructor_class_management, show_instructor_class_attendance, show_instructor_notifications, show_instructor_reports
 from style import GLOBAL_CSS, with_primary_color
@@ -771,6 +773,8 @@ def show_student_interface():
     student_pages = {
         "Dashboard": ("dashboard", show_student_dashboard),
         "Classes": ("classes", show_student_classes),
+        "AI Chatbot": ("ai_chatbot", lambda: show_ai_chatbot("student")),
+        "Smart Scheduling": ("scheduling", lambda: show_smart_scheduling("student", student_info['username'])),
         "Attendance": ("attendance", show_student_attendance),
         "Reports": ("reports", show_student_reports),
         "Profile": ("profile", show_student_profile),
@@ -830,6 +834,8 @@ def show_instructor_interface():
     instructor_pages = {
         "Dashboard": ("dashboard", show_instructor_dashboard),
         "Class Management": ("class_management", show_instructor_class_management),
+        "AI Chatbot": ("ai_chatbot", lambda: show_ai_chatbot("instructor")),
+        "Smart Scheduling": ("scheduling", lambda: show_smart_scheduling("instructor", instructor_info['username'])),
         "Attendance": ("attendance", show_instructor_class_attendance),
         "Notifications": ("notifications", show_instructor_notifications),
         "Reports": ("reports", show_instructor_reports),
@@ -1072,6 +1078,8 @@ def show_admin_interface():
         "Attendance Management",
         "Smart Notifications",
         "AI Features",
+        "AI Chatbot",
+        "Smart Scheduling",
         "Analytics",
         "Settings",
         "🛡️ Admin Panel",
@@ -1086,6 +1094,11 @@ def show_admin_interface():
         show_notifications()
     elif page == "AI Features":
         show_ai_features()
+    elif page == "AI Chatbot":
+        show_ai_chatbot("admin")
+    elif page == "Smart Scheduling":
+        user_info = st.session_state.admin_auth.get_user_info(st.session_state.admin_session_id)
+        show_smart_scheduling("admin", user_info['username'] if user_info else "admin")
     elif page == "Analytics":
         # Analytics layout: registration, upload attendance, records, live capture
         tab1, tab2, tab3, tab4 = st.tabs(
