@@ -907,16 +907,24 @@ def render_quick_meet_sidebar(role: str, username: str):
         )
         room_to_use = sanitize_room_name(room_input or default_room)
 
-        col_start, col_join = st.columns(2)
-        with col_start:
-            if st.button("Start Room", key=f"{role}_quick_meet_start"):
-                set_quick_meet_room(room_to_use, username or role)
-                st.session_state['active_quick_meet_room'] = room_to_use
-                st.success(f"Room '{room_to_use}' is ready")
-        with col_join:
-            if st.button("Join Room", key=f"{role}_quick_meet_join"):
+        # Students can only join, instructors can start and join
+        if role == "student":
+            # Students: Only Join Room button
+            if st.button("Join Room", key=f"{role}_quick_meet_join", use_container_width=True):
                 st.session_state['active_quick_meet_room'] = room_to_use
                 st.info(f"Joining {room_to_use}")
+        else:
+            # Instructors/Admins: Both Start and Join buttons
+            col_start, col_join = st.columns(2)
+            with col_start:
+                if st.button("Start Room", key=f"{role}_quick_meet_start"):
+                    set_quick_meet_room(room_to_use, username or role)
+                    st.session_state['active_quick_meet_room'] = room_to_use
+                    st.success(f"Room '{room_to_use}' is ready")
+            with col_join:
+                if st.button("Join Room", key=f"{role}_quick_meet_join"):
+                    st.session_state['active_quick_meet_room'] = room_to_use
+                    st.info(f"Joining {room_to_use}")
 
         if active_room:
             if timestamp:
