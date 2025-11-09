@@ -1045,20 +1045,51 @@ def show_admin_interface():
 
     # Show user info in sidebar
     user_info = st.session_state.admin_auth.get_user_info(st.session_state.admin_session_id)
-    if user_info:
-        st.sidebar.markdown("---")
-        st.sidebar.markdown(f"**👤 Logged in as:** {user_info['username']}")
-        st.sidebar.markdown(f"**🔑 Role:** {user_info['role']}")
-        st.sidebar.markdown(f"**⚡ Permissions:** {', '.join(user_info['permissions'])}")
+    if not user_info:
+        st.error("Unable to load admin information. Please log in again.")
+        return
 
-    # Sidebar navigation
-    st.sidebar.title("Navigation")
+    st.sidebar.markdown("---")
+    st.sidebar.markdown(f"**👤 Logged in as:** {user_info['username']}")
+    st.sidebar.markdown(f"**🔑 Role:** {user_info['role']}")
+    st.sidebar.markdown(f"**⚡ Permissions:** {', '.join(user_info['permissions'])}")
+
+    # Admin pages configuration
+    admin_pages = {
+        "Dashboard": ("dashboard", show_admin_dashboard),
+        "User Management": ("user_management", show_user_management),
+        "System Settings": ("system_settings", show_system_settings),
+        "System Logs": ("system_logs", show_system_logs),
+        "Attendance Management": ("attendance_management", show_attendance_management),
+        "Smart Notifications": ("notifications", show_notifications),
+        "AI Features": ("ai_features", show_ai_features),
+        "AI Chatbot": ("ai_chatbot", lambda: show_ai_chatbot("admin")),
+        "Smart Scheduling": ("scheduling", lambda: show_smart_scheduling("admin", user_info['username'])),
+        "Analytics": ("analytics", None),  # Will be handled separately
+    }
+
+    current_page_key = st.session_state.get('admin_page', 'dashboard')
+    if current_page_key not in {cfg[0] for cfg in admin_pages.values() if cfg[1] is not None}:
+        current_page_key = 'dashboard'
+        st.session_state.admin_page = current_page_key
+
+    page_labels = list(admin_pages.keys())
+    label_to_key = {label: cfg[0] for label, cfg in admin_pages.items()}
+
+    try:
+        default_index = page_labels.index(next(label for label, key in label_to_key.items() if key == current_page_key))
+    except StopIteration:
+        default_index = 0
+
+    st.sidebar.markdown("---")
+    selected_label = st.sidebar.radio("Admin Navigation", page_labels, index=default_index)
+    st.session_state.admin_page = label_to_key[selected_label]
 
     # Offline Sync Button
     st.sidebar.markdown("---")
     col1, col2 = st.sidebar.columns([1, 1])
     with col1:
-        if st.button("🔄 Sync", help="Sync offline data"):
+        if st.button("🔄 Sync", help="Sync offline data", use_container_width=True):
             st.markdown(
                 """
                 <script>
@@ -1069,45 +1100,21 @@ def show_admin_interface():
                 """,
                 unsafe_allow_html=True,
             )
+            st.success("Sync initiated!")
     with col2:
         st.markdown(
             """
-            <div id="sync-status" style="font-size: 12px; color: #666;">
+            <div id="sync-status" style="font-size: 12px; color: #666; padding-top: 8px;">
                 <span id="sync-indicator">🟢</span> <span id="sync-text">Online</span>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-    # Add admin section to navigation
-    navigation_options = [
-        "Dashboard",
-        "Attendance Management",
-        "Smart Notifications",
-        "AI Features",
-        "AI Chatbot",
-        "Smart Scheduling",
-        "Analytics",
-        "Settings",
-        "🛡️ Admin Panel",
-    ]
-    page = st.sidebar.selectbox("Choose a page", navigation_options)
-
-    if page == "Dashboard":
-        show_dashboard()
-    elif page == "Attendance Management":
-        show_attendance_management()
-    elif page == "Smart Notifications":
-        show_notifications()
-    elif page == "AI Features":
-        show_ai_features()
-    elif page == "AI Chatbot":
-        show_ai_chatbot("admin")
-    elif page == "Smart Scheduling":
-        user_info = st.session_state.admin_auth.get_user_info(st.session_state.admin_session_id)
-        show_smart_scheduling("admin", user_info['username'] if user_info else "admin")
-    elif page == "Analytics":
+    # Render selected page
+    if selected_label == "Analytics":
         # Analytics layout: registration, upload attendance, records, live capture
+        st.header("📊 Analytics & Attendance Management")
         tab1, tab2, tab3, tab4 = st.tabs(
             ["Register Person", "Mark Attendance (Upload)", "Attendance Records", "Live Camera Capture"]
         )
@@ -1117,12 +1124,12 @@ def show_admin_interface():
             st.subheader("Register Person")
             col1, col2 = st.columns([2, 1])
             with col1:
-                person_name = st.text_input("Person Name", placeholder="Enter full name")
+                person_name = st.text_input("Person Name", placeholder="Enter full name", key="analytics_register_name")
                 uploaded_file = st.file_uploader(
                     "Upload Photo", type=["jpg", "jpeg", "png"], key="register_person_photo"
                 )
 
-                if st.button("Register Person", key="register_person_btn"):
+                if st.button("Register Person", key="register_person_btn", type="primary"):
                     if person_name and uploaded_file:
                         image_bytes = uploaded_file.read()
                         success = st.session_state.attendance_system.register_person(
@@ -1134,6 +1141,7 @@ def show_admin_interface():
                                 "Person Registered",
                                 f"{person_name} has been registered for attendance tracking",
                             )
+                            st.rerun()
                         else:
                             st.error("❌ Failed to register person. Please check the image and try again.")
                     else:
@@ -1144,6 +1152,7 @@ def show_admin_interface():
                     **Registration Tips:**
                     - Use a clear frontal photo
                     - Name must match official records
+                    - Ensure good lighting
                     """
                 )
 
@@ -1156,7 +1165,7 @@ def show_admin_interface():
                     "Upload Photo for Attendance", type=["jpg", "jpeg", "png"], key="admin_attendance_photo"
                 )
 
-                if st.button("Mark Attendance", key="mark_attendance_btn_admin"):
+                if st.button("Mark Attendance", key="mark_attendance_btn_admin", type="primary"):
                     if uploaded_attendance:
                         image_bytes = uploaded_attendance.read()
                         with st.spinner("Processing attendance..."):
@@ -1188,6 +1197,66 @@ def show_admin_interface():
                             st.error("❌ Unable to mark attendance. Please try again.")
                     else:
                         st.warning("Please upload a photo before marking attendance.")
+            with col2:
+                st.info(
+                    """
+                    **Attendance Tips:**
+                    - Upload clear photos
+                    - Multiple faces can be detected
+                    - Unknown faces will be flagged
+                    """
+                )
+
+        # Attendance Records
+        with tab3:
+            st.subheader("Attendance Records")
+            try:
+                if hasattr(st.session_state, 'db') and hasattr(st.session_state.db, 'get_attendance_records'):
+                    all_records = st.session_state.db.get_attendance_records()
+                    if all_records:
+                        df = pd.DataFrame(all_records)
+                        st.dataframe(df, use_container_width=True, hide_index=True)
+                        
+                        # Summary stats
+                        col1, col2, col3 = st.columns(3)
+                        with col1:
+                            st.metric("Total Records", len(all_records))
+                        with col2:
+                            unique_people = len(set(r.get('person_name', r.get('student_username', '')) for r in all_records))
+                            st.metric("Unique People", unique_people)
+                        with col3:
+                            today_count = len([r for r in all_records if r.get('timestamp', '').startswith(datetime.now().strftime('%Y-%m-%d'))])
+                            st.metric("Today's Records", today_count)
+                    else:
+                        st.info("No attendance records found.")
+                else:
+                    st.info("Attendance records database not available.")
+            except Exception as e:
+                st.error(f"Error loading attendance records: {str(e)}")
+
+        # Live Camera Capture
+        with tab4:
+            st.subheader("Live Camera Capture")
+            st.info("Live camera capture feature requires camera access. Use the upload method for now.")
+            try:
+                camera_photo = st.camera_input("Take a photo for attendance", key="admin_live_camera")
+                if camera_photo:
+                    with st.spinner("Processing..."):
+                        image_bytes = camera_photo.read()
+                        result = st.session_state.attendance_system.mark_attendance(image_bytes=image_bytes)
+                        
+                        if result and result.get("success"):
+                            st.success("✅ Attendance marked successfully!")
+                            if result.get("recognized_faces"):
+                                for face in result["recognized_faces"]:
+                                    st.write(f"• {face['name']} (Confidence: {face.get('confidence', 0):.2f})")
+            except Exception as e:
+                st.warning(f"Camera not available: {str(e)}")
+    else:
+        # Render other pages
+        page_function = admin_pages[selected_label][1]
+        if page_function:
+            page_function()
 
 # Ensure app runs when executed
 if __name__ == "__main__":
