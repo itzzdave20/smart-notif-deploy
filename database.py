@@ -167,9 +167,20 @@ class DatabaseManager:
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             
-            query = '''
-                SELECT person_name, timestamp, confidence, status, image_path,
-                       class_code, method, selfie_verified, face_confidence, session_id, instructor
+            # First, check which columns exist
+            cursor.execute("PRAGMA table_info(attendance)")
+            columns_info = cursor.fetchall()
+            existing_columns = [col[1] for col in columns_info]
+            
+            # Build query based on available columns
+            base_columns = ['person_name', 'timestamp', 'confidence', 'status', 'image_path']
+            optional_columns = ['class_code', 'method', 'selfie_verified', 'face_confidence', 'session_id', 'instructor']
+            
+            select_columns = [col for col in base_columns if col in existing_columns]
+            select_columns.extend([col for col in optional_columns if col in existing_columns])
+            
+            query = f'''
+                SELECT {', '.join(select_columns)}
                 FROM attendance
                 ORDER BY timestamp DESC
             '''
@@ -181,23 +192,48 @@ class DatabaseManager:
             
             records = []
             for row in cursor.fetchall():
-                record = {
-                    'student_username': row[0],
-                    'person_name': row[0],
-                    'timestamp': row[1].isoformat() if isinstance(row[1], datetime) else str(row[1]),
-                    'confidence': row[2],
-                    'status': row[3],
-                    'image_path': row[4] if len(row) > 4 else None
-                }
+                record = {}
                 
-                # Add new fields if they exist
-                if len(row) > 5:
-                    record['class_code'] = row[5]
-                    record['method'] = row[6]
-                    record['selfie_verified'] = bool(row[7]) if row[7] is not None else False
-                    record['face_confidence'] = row[8] if row[8] is not None else 0.0
-                    record['session_id'] = row[9]
-                    record['instructor'] = row[10]
+                # Map columns to values
+                for i, col in enumerate(select_columns):
+                    if col == 'person_name':
+                        record['student_username'] = row[i]
+                        record['person_name'] = row[i]
+                    elif col == 'timestamp':
+                        if isinstance(row[i], datetime):
+                            record['timestamp'] = row[i].isoformat()
+                        else:
+                            record['timestamp'] = str(row[i])
+                    elif col == 'confidence':
+                        record['confidence'] = row[i]
+                    elif col == 'status':
+                        record['status'] = row[i]
+                    elif col == 'image_path':
+                        record['image_path'] = row[i]
+                    elif col == 'class_code':
+                        record['class_code'] = row[i]
+                    elif col == 'method':
+                        record['method'] = row[i]
+                    elif col == 'selfie_verified':
+                        record['selfie_verified'] = bool(row[i]) if row[i] is not None else False
+                    elif col == 'face_confidence':
+                        record['face_confidence'] = row[i] if row[i] is not None else 0.0
+                    elif col == 'session_id':
+                        record['session_id'] = row[i]
+                    elif col == 'instructor':
+                        record['instructor'] = row[i]
+                
+                # Set defaults for missing fields
+                if 'student_username' not in record:
+                    record['student_username'] = record.get('person_name', '')
+                if 'class_code' not in record:
+                    record['class_code'] = None
+                if 'method' not in record:
+                    record['method'] = 'unknown'
+                if 'selfie_verified' not in record:
+                    record['selfie_verified'] = False
+                if 'face_confidence' not in record:
+                    record['face_confidence'] = 0.0
                 
                 records.append(record)
             
@@ -205,6 +241,8 @@ class DatabaseManager:
             return records
         except Exception as e:
             print(f"Error getting attendance records: {e}")
+            import traceback
+            print(traceback.format_exc())
             return []
     
     def get_attendance_today(self) -> List[Dict]:

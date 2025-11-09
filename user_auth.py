@@ -987,10 +987,15 @@ def show_student_attendance():
         
         # Get student's attendance records from database
         try:
+            # Check if method exists, if not recreate database instance
+            if not hasattr(st.session_state.db, 'get_attendance_records'):
+                from database import DatabaseManager
+                st.session_state.db = DatabaseManager()
+            
             all_records = st.session_state.db.get_attendance_records()
             student_records = [
                 record for record in all_records 
-                if record.get('student_username', '').lower() == student_username.lower()
+                if record.get('student_username', record.get('person_name', '')).lower() == student_username.lower()
             ]
             
             # Sort by timestamp (newest first)
