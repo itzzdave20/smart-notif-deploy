@@ -255,6 +255,19 @@ class InstructorAuth:
         if class_code not in self.classes:
             return False, "Class not found"
         
+        # Verify that the username is actually a student, not an instructor
+        if student_username in self.instructors:
+            return False, "Instructors cannot enroll in classes. Only students can enroll."
+        
+        # Check if the username exists in students
+        if student_username not in self.students:
+            return False, "User not found. Only registered students can enroll in classes."
+        
+        # Verify the user has student role
+        student_data = self.students.get(student_username, {})
+        if student_data.get("role") != "student":
+            return False, "Only students can enroll in classes."
+        
         if student_username not in self.classes[class_code]["enrolled_students"]:
             self.classes[class_code]["enrolled_students"].append(student_username)
             self.save_classes()

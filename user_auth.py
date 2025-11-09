@@ -210,10 +210,22 @@ class StudentAuth:
     
     def enroll_in_class(self, student_username, class_code):
         """Enroll student in a class"""
-        # Load instructor auth to access classes
+        # Verify that the username is actually a student
+        if student_username not in self.students:
+            return False, "User not found. Only registered students can enroll in classes."
+        
+        # Verify the user has student role
+        student_data = self.students.get(student_username, {})
+        if student_data.get("role") != "student":
+            return False, "Only students can enroll in classes."
+        
+        # Check if user is an instructor (additional safeguard)
         from instructor_auth import InstructorAuth
         instructor_auth = InstructorAuth()
+        if student_username in instructor_auth.instructors:
+            return False, "Instructors cannot enroll in classes. Only students can enroll."
         
+        # Load instructor auth to access classes
         # Check if class exists
         if class_code not in instructor_auth.classes:
             return False, "Class not found"
