@@ -416,29 +416,43 @@ class AIFeatures:
                 conversation_history = []
             
             # Simple rule-based responses for common questions
-            user_message_lower = user_message.lower()
+            user_message_lower = user_message.lower().strip()
+            
+            # Greetings (check first)
+            if any(word in user_message_lower for word in ['hello', 'hi', 'hey', 'greetings', 'good morning', 'good afternoon', 'good evening']):
+                response = "Hello! I'm your AI assistant. I can help you with assignments, classes, attendance, and more. How can I assist you today?"
+            
+            # Computer Science / Programming questions
+            elif any(word in user_message_lower for word in ['computer science', 'programming', 'code', 'coding', 'algorithm', 'software', 'developer', 'python', 'java', 'javascript', 'html', 'css', 'database', 'data structure']):
+                response = self._handle_computer_science_question(user_message)
             
             # Assignment help
-            if any(word in user_message_lower for word in ['assignment', 'homework', 'project', 'essay']):
+            elif any(word in user_message_lower for word in ['assignment', 'homework', 'project', 'essay', 'paper', 'thesis']):
                 response = self._handle_assignment_help(user_message)
             
             # Class-related questions
-            elif any(word in user_message_lower for word in ['class', 'course', 'schedule', 'enroll']):
+            elif any(word in user_message_lower for word in ['class', 'course', 'schedule', 'enroll', 'enrollment', 'syllabus']):
                 response = self._handle_class_question(user_message)
             
             # Attendance questions
-            elif any(word in user_message_lower for word in ['attendance', 'present', 'absent', 'mark']):
+            elif any(word in user_message_lower for word in ['attendance', 'present', 'absent', 'mark attendance', 'check attendance']):
                 response = self._handle_attendance_question(user_message)
             
+            # What/How/Why questions (educational)
+            elif user_message_lower.startswith(('what is', 'what are', 'what does', 'what do', 'what was', 'what were')):
+                response = self._handle_what_question(user_message)
+            
+            elif user_message_lower.startswith(('how to', 'how do', 'how does', 'how can', 'how should')):
+                response = self._handle_how_question(user_message)
+            
+            elif user_message_lower.startswith(('why', 'why is', 'why are', 'why do', 'why does')):
+                response = self._handle_why_question(user_message)
+            
             # General questions
-            elif any(word in user_message_lower for word in ['what', 'how', 'why', 'when', 'where', 'who']):
-                response = self._handle_general_question(user_message)
+            elif any(word in user_message_lower for word in ['tell me', 'explain', 'describe', 'define', 'meaning']):
+                response = self._handle_explain_question(user_message)
             
-            # Greetings
-            elif any(word in user_message_lower for word in ['hello', 'hi', 'hey', 'greetings']):
-                response = "Hello! I'm your AI assistant. I can help you with assignments, classes, attendance, and more. How can I assist you today?"
-            
-            # Default response
+            # Default response with better context
             else:
                 response = self._generate_contextual_response(user_message, conversation_history)
             
@@ -450,6 +464,8 @@ class AIFeatures:
             
         except Exception as e:
             print(f"Error in AI chat: {e}")
+            import traceback
+            print(traceback.format_exc())
             return {
                 'response': "I apologize, but I encountered an error. Please try rephrasing your question.",
                 'timestamp': datetime.now().isoformat(),
@@ -501,6 +517,160 @@ class AIFeatures:
                 "• View attendance history\n\n"
                 "What would you like to know about attendance?")
     
+    def _handle_computer_science_question(self, message: str) -> str:
+        """Handle computer science and programming questions"""
+        message_lower = message.lower()
+        
+        if 'programming' in message_lower or 'what is programming' in message_lower:
+            return ("Programming is the process of creating instructions for computers to follow. It involves:\n\n"
+                    "• Writing code in programming languages (like Python, Java, JavaScript)\n"
+                    "• Solving problems using algorithms and data structures\n"
+                    "• Building software applications, websites, and systems\n"
+                    "• Debugging and testing code to ensure it works correctly\n\n"
+                    "Programming is a fundamental skill in computer science that allows you to create software, automate tasks, and solve complex problems. Would you like to know more about a specific programming language or concept?")
+        
+        elif 'computer science' in message_lower:
+            return ("Computer Science is the study of computers and computational systems. It covers:\n\n"
+                    "• **Programming & Software Development**: Writing code to create applications\n"
+                    "• **Algorithms & Data Structures**: Efficient problem-solving methods\n"
+                    "• **Computer Systems**: How hardware and software work together\n"
+                    "• **Networks & Security**: Internet, cybersecurity, and data protection\n"
+                    "• **Artificial Intelligence**: Machine learning and intelligent systems\n"
+                    "• **Database Systems**: Storing and managing data\n\n"
+                    "Computer Science combines theory and practice to solve real-world problems using technology. What specific area interests you?")
+        
+        elif any(word in message_lower for word in ['python', 'java', 'javascript', 'c++', 'html', 'css']):
+            lang = next((word for word in ['python', 'java', 'javascript', 'c++', 'html', 'css'] if word in message_lower), 'programming')
+            return f"I'd be happy to help you with {lang.title()}! {lang.title()} is a powerful programming language used for various applications. What specific aspect of {lang.title()} would you like to learn about?"
+        
+        elif 'algorithm' in message_lower:
+            return ("An algorithm is a step-by-step procedure for solving a problem. Key concepts:\n\n"
+                    "• **Efficiency**: How fast an algorithm runs (time complexity)\n"
+                    "• **Correctness**: Does it solve the problem correctly?\n"
+                    "• **Common Algorithms**: Sorting, searching, graph traversal\n"
+                    "• **Design Patterns**: Divide and conquer, dynamic programming, greedy algorithms\n\n"
+                    "Algorithms are the foundation of computer science. Would you like examples of specific algorithms?")
+        
+        elif 'data structure' in message_lower:
+            return ("Data structures are ways of organizing and storing data in a computer. Common types:\n\n"
+                    "• **Arrays & Lists**: Sequential data storage\n"
+                    "• **Stacks & Queues**: LIFO and FIFO structures\n"
+                    "• **Trees**: Hierarchical data (binary trees, BST)\n"
+                    "• **Hash Tables**: Fast key-value lookups\n"
+                    "• **Graphs**: Network relationships\n\n"
+                    "Choosing the right data structure is crucial for efficient programming. What would you like to know more about?")
+        
+        else:
+            return ("I can help you with computer science topics! I can explain:\n\n"
+                    "• Programming concepts and languages\n"
+                    "• Algorithms and data structures\n"
+                    "• Software development practices\n"
+                    "• Computer science fundamentals\n\n"
+                    "What specific topic would you like to learn about?")
+    
+    def _handle_what_question(self, message: str) -> str:
+        """Handle 'what is/are' questions"""
+        message_lower = message.lower()
+        
+        # Extract the topic after "what is/are"
+        if 'what is' in message_lower:
+            topic = message_lower.split('what is', 1)[1].strip()
+        elif 'what are' in message_lower:
+            topic = message_lower.split('what are', 1)[1].strip()
+        else:
+            topic = message_lower.replace('what', '').strip()
+        
+        # Provide specific answers for common questions
+        if 'programming' in topic:
+            return self._handle_computer_science_question("what is programming")
+        elif 'computer science' in topic or 'cs' in topic:
+            return self._handle_computer_science_question("computer science")
+        elif 'algorithm' in topic:
+            return self._handle_computer_science_question("algorithm")
+        elif 'data structure' in topic:
+            return self._handle_computer_science_question("data structure")
+        else:
+            # Generic but helpful response
+            keywords = self.extract_keywords(topic, max_keywords=3)
+            return (f"Great question! '{topic.title()}' is an interesting topic. "
+                   f"While I can provide general guidance, for detailed explanations about {', '.join(keywords) if keywords else 'this topic'}, "
+                   f"I recommend:\n\n"
+                   f"• Consulting your course materials and textbooks\n"
+                   f"• Asking your instructor for clarification\n"
+                   f"• Using online educational resources\n"
+                   f"• Reviewing class notes and lecture recordings\n\n"
+                   f"Would you like help with a specific aspect of this topic, or do you have questions about your assignments?")
+    
+    def _handle_how_question(self, message: str) -> str:
+        """Handle 'how to/do/does' questions"""
+        message_lower = message.lower()
+        
+        if 'program' in message_lower or 'code' in message_lower:
+            return ("To start programming, here's a step-by-step guide:\n\n"
+                    "1. **Choose a Language**: Start with Python (beginner-friendly) or JavaScript (web development)\n"
+                    "2. **Set Up Environment**: Install a code editor (VS Code, PyCharm) and the language runtime\n"
+                    "3. **Learn Basics**: Variables, data types, control structures (if/else, loops)\n"
+                    "4. **Practice**: Write simple programs, solve coding challenges\n"
+                    "5. **Build Projects**: Create small applications to apply what you learn\n"
+                    "6. **Use Resources**: Online tutorials, documentation, coding communities\n\n"
+                    "Would you like specific guidance on any of these steps?")
+        
+        elif 'mark attendance' in message_lower or 'attendance' in message_lower:
+            return ("To mark your attendance:\n\n"
+                    "1. Go to the **Attendance** page in your student dashboard\n"
+                    "2. **Step 1**: Scan the QR code displayed by your instructor\n"
+                    "3. **Step 2**: Take a selfie photo using your camera or upload a photo\n"
+                    "4. Click **Mark Attendance** button\n"
+                    "5. Wait for verification - you'll see a success message when done\n\n"
+                    "Make sure you're enrolled in the class and the QR code hasn't expired!")
+        
+        else:
+            keywords = self.extract_keywords(message, max_keywords=3)
+            return (f"I can help you understand how to {message_lower.replace('how', '').replace('to', '').strip()}! "
+                   f"For step-by-step instructions, I recommend:\n\n"
+                   f"• Checking your course materials and assignments\n"
+                   f"• Reviewing class notes and lecture slides\n"
+                   f"• Asking your instructor for guidance\n"
+                   f"• Using online tutorials and documentation\n\n"
+                   f"Would you like help with a specific part of this process?")
+    
+    def _handle_why_question(self, message: str) -> str:
+        """Handle 'why' questions"""
+        message_lower = message.lower()
+        
+        keywords = self.extract_keywords(message, max_keywords=3)
+        return (f"That's a great question! Understanding the 'why' behind concepts is important for learning. "
+               f"For a detailed explanation about {', '.join(keywords) if keywords else 'this topic'}, I suggest:\n\n"
+               f"• Reviewing your course materials and textbooks\n"
+               f"• Asking your instructor during office hours\n"
+               f"• Exploring academic resources and research papers\n"
+               f"• Discussing with classmates in study groups\n\n"
+               f"I can help you with practical aspects like assignments, but for deep conceptual understanding, "
+               f"your course materials and instructors are the best resources. What specific aspect would you like help with?")
+    
+    def _handle_explain_question(self, message: str) -> str:
+        """Handle 'explain', 'tell me', 'describe' questions"""
+        message_lower = message.lower()
+        
+        # Extract topic
+        topic = message_lower
+        for word in ['explain', 'tell me about', 'describe', 'define', 'what is the meaning of']:
+            if word in topic:
+                topic = topic.split(word, 1)[1].strip()
+                break
+        
+        # Check if it's a CS/programming topic
+        if any(word in topic for word in ['programming', 'computer science', 'code', 'algorithm', 'data structure']):
+            return self._handle_computer_science_question(topic)
+        
+        keywords = self.extract_keywords(topic, max_keywords=3)
+        return (f"I'd be happy to help explain {topic if topic else 'this topic'}! "
+               f"Here's what I can tell you:\n\n"
+               f"• For academic concepts, check your course materials and textbooks\n"
+               f"• For programming topics, I can provide general guidance\n"
+               f"• For assignment help, I can give you tips and strategies\n\n"
+               f"Could you be more specific about what aspect of {', '.join(keywords) if keywords else 'this topic'} you'd like me to explain?")
+    
     def _handle_general_question(self, message: str) -> str:
         """Handle general questions"""
         return ("I'm here to help! I can assist with:\n"
@@ -518,14 +688,28 @@ class AIFeatures:
         # Analyze sentiment
         sentiment = self.analyze_sentiment(message)
         
-        # Generate response based on context
-        if sentiment['sentiment'] == 'positive':
-            response = f"Great! I'm glad to help. Based on your message about {', '.join(keywords[:3]) if keywords else 'this topic'}, "
-        elif sentiment['sentiment'] == 'negative':
-            response = "I understand this might be challenging. Let me help you with "
-        else:
-            response = "I can help you with "
+        # Check if message contains academic terms
+        academic_terms = ['study', 'learn', 'teach', 'course', 'subject', 'topic', 'concept', 'theory', 'practice', 'exam', 'test', 'quiz']
+        is_academic = any(term in message.lower() for term in academic_terms)
         
-        response += f"your question. Could you provide more details so I can assist you better?"
+        # Generate response based on context
+        if is_academic:
+            response = (f"I can help you with {', '.join(keywords[:2]) if keywords else 'this academic topic'}! "
+                       f"For detailed information, I recommend:\n\n"
+                       f"• Reviewing your course materials and textbooks\n"
+                       f"• Checking your class notes and lecture recordings\n"
+                       f"• Asking your instructor for clarification\n"
+                       f"• Using online educational resources\n\n"
+                       f"What specific aspect would you like help with?")
+        elif sentiment['sentiment'] == 'positive':
+            response = f"Great! I'm glad to help. Based on your message about {', '.join(keywords[:3]) if keywords else 'this topic'}, I can assist you. Could you provide more details about what you need?"
+        elif sentiment['sentiment'] == 'negative':
+            response = "I understand this might be challenging. Let me help you with this. Could you provide more details about what you're struggling with?"
+        else:
+            response = (f"I can help you with {', '.join(keywords[:2]) if keywords else 'your question'}! "
+                       f"To give you the best assistance, could you provide more details? For example:\n\n"
+                       f"• What specific topic or concept?\n"
+                       f"• Is this related to an assignment or class?\n"
+                       f"• What would you like to know or accomplish?")
         
         return response
