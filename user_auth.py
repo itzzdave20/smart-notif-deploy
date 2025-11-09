@@ -588,6 +588,78 @@ def show_student_profile():
         else:
             st.info("No classes available at the moment.")
 
+def show_student_classes():
+    """Show student class enrollment interface"""
+    st.header("📚 Class Enrollment")
+    
+    auth = StudentAuth()
+    session_id = st.session_state.get('student_session_id')
+    
+    if not session_id:
+        st.error("No student session found. Please login again.")
+        return
+    
+    student_info = auth.get_student_info(session_id)
+    
+    if not student_info:
+        st.error("Unable to load student information")
+        return
+    
+    student_username = student_info['username']
+    enrolled_classes = auth.get_student_classes(student_username)
+    available_classes = auth.get_available_classes()
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.subheader("My Enrolled Classes")
+        if enrolled_classes:
+            for class_code in enrolled_classes:
+                if class_code in available_classes:
+                    class_data = available_classes[class_code]
+                    with st.container():
+                        st.write(f"**{class_code}:** {class_data.get('class_name', 'N/A')}")
+                        st.caption(f"Instructor: {class_data.get('instructor', 'N/A')}")
+                        st.caption(f"Schedule: {class_data.get('schedule', 'N/A')} | Room: {class_data.get('room', 'N/A')}")
+                        st.caption(f"Enrolled Students: {len(class_data.get('enrolled_students', []))}")
+                        if st.button(f"Unenroll", key=f"unenroll_{class_code}"):
+                            success, message = auth.unenroll_from_class(student_username, class_code)
+                            if success:
+                                st.success(f"✅ {message}")
+                                st.rerun()
+                            else:
+                                st.error(f"❌ {message}")
+                        st.markdown("---")
+        else:
+            st.info("You are not enrolled in any classes yet.")
+    
+    with col2:
+        st.subheader("Available Classes")
+        if available_classes:
+            # Filter out already enrolled classes
+            available_to_enroll = {code: data for code, data in available_classes.items() 
+                                  if code not in enrolled_classes and data.get('status') == 'active'}
+            
+            if available_to_enroll:
+                for class_code, class_data in available_to_enroll.items():
+                    with st.container():
+                        st.write(f"**{class_code}:** {class_data.get('class_name', 'N/A')}")
+                        st.caption(f"Instructor: {class_data.get('instructor', 'N/A')}")
+                        st.caption(f"Schedule: {class_data.get('schedule', 'N/A')} | Room: {class_data.get('room', 'N/A')}")
+                        st.caption(f"Students: {len(class_data.get('enrolled_students', []))}")
+                        if st.button(f"Enroll", key=f"enroll_{class_code}", type="primary"):
+                            success, message = auth.enroll_in_class(student_username, class_code)
+                            if success:
+                                st.success(f"✅ {message}")
+                                st.rerun()
+                            else:
+                                st.error(f"❌ {message}")
+                        st.markdown("---")
+            else:
+                st.info("No new classes available to enroll in.")
+        else:
+            st.info("No classes available at the moment.")
+
 def show_student_dashboard():
     """Show student dashboard"""
     st.header("📊 Student Dashboard")

@@ -27,7 +27,7 @@ from ai_features import AIFeatures
 from database import DatabaseManager
 from config import STREAMLIT_THEME
 from admin_auth import AdminAuth, show_admin_login, show_admin_logout, check_admin_auth, require_admin_auth, show_admin_dashboard, show_user_management, show_system_settings, show_system_logs
-from user_auth import StudentAuth, show_student_login, show_student_logout, check_student_auth, require_student_auth, show_student_profile, show_student_dashboard, show_student_attendance, show_student_reports
+from user_auth import StudentAuth, show_student_login, show_student_logout, check_student_auth, require_student_auth, show_student_profile, show_student_dashboard, show_student_attendance, show_student_reports, show_student_classes
 from instructor_auth import InstructorAuth, show_instructor_login, show_instructor_logout, check_instructor_auth, require_instructor_auth, show_instructor_dashboard, show_instructor_profile
 from instructor_features import show_instructor_class_management, show_instructor_class_attendance, show_instructor_notifications, show_instructor_reports
 from style import GLOBAL_CSS, with_primary_color
@@ -770,6 +770,7 @@ def show_student_interface():
 
     student_pages = {
         "Dashboard": ("dashboard", show_student_dashboard),
+        "Classes": ("classes", show_student_classes),
         "Attendance": ("attendance", show_student_attendance),
         "Reports": ("reports", show_student_reports),
         "Profile": ("profile", show_student_profile),
