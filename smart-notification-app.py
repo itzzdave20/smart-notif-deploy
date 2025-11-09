@@ -549,7 +549,7 @@ if 'attendance_system' not in st.session_state:
     st.session_state.attendance_system = AttendanceSystem()
 if 'notification_engine' not in st.session_state:
     st.session_state.notification_engine = NotificationEngine()
-if 'ai_features' not in st.session_state:
+if 'ai_features' not in st.session_state or not hasattr(st.session_state.ai_features, 'chat_with_ai'):
     st.session_state.ai_features = AIFeatures()
 if 'db' not in st.session_state:
     st.session_state.db = DatabaseManager()

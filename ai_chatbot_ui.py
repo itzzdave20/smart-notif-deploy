@@ -11,8 +11,8 @@ def show_ai_chatbot(role: str = "student"):
     if f'{role}_chat_history' not in st.session_state:
         st.session_state[f'{role}_chat_history'] = []
     
-    # Initialize AI features
-    if 'ai_features' not in st.session_state:
+    # Initialize AI features - recreate if method doesn't exist
+    if 'ai_features' not in st.session_state or not hasattr(st.session_state.ai_features, 'chat_with_ai'):
         st.session_state.ai_features = AIFeatures()
     
     ai = st.session_state.ai_features
@@ -43,19 +43,34 @@ def show_ai_chatbot(role: str = "student"):
         
         # Get AI response
         with st.spinner("Thinking..."):
-            conversation_history = [
-                {'role': msg['role'], 'content': msg['content']} 
-                for msg in st.session_state[f'{role}_chat_history'][-10:]  # Last 10 messages for context
-            ]
-            
-            ai_response = ai.chat_with_ai(user_input, conversation_history)
-            
-            # Add AI response to history
-            st.session_state[f'{role}_chat_history'].append({
-                'role': 'assistant',
-                'content': ai_response['response'],
-                'timestamp': ai_response.get('timestamp', datetime.now().isoformat())
-            })
+            try:
+                conversation_history = [
+                    {'role': msg['role'], 'content': msg['content']} 
+                    for msg in st.session_state[f'{role}_chat_history'][-10:]  # Last 10 messages for context
+                ]
+                
+                ai_response = ai.chat_with_ai(user_input, conversation_history)
+                
+                # Add AI response to history
+                if ai_response and 'response' in ai_response:
+                    st.session_state[f'{role}_chat_history'].append({
+                        'role': 'assistant',
+                        'content': ai_response['response'],
+                        'timestamp': ai_response.get('timestamp', datetime.now().isoformat())
+                    })
+                else:
+                    st.error("Failed to get AI response. Please try again.")
+            except AttributeError as e:
+                st.error(f"AI Chatbot error: {str(e)}. Please refresh the page.")
+                st.stop()
+            except Exception as e:
+                st.error(f"An error occurred: {str(e)}. Please try again.")
+                # Add a fallback response
+                st.session_state[f'{role}_chat_history'].append({
+                    'role': 'assistant',
+                    'content': "I apologize, but I encountered an error. Please try rephrasing your question or refresh the page.",
+                    'timestamp': datetime.now().isoformat()
+                })
         
         # Rerun to show new messages
         st.rerun()
