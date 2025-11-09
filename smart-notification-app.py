@@ -828,8 +828,6 @@ def show_instructor_interface():
     st.sidebar.markdown(f"**🏫 Department:** {profile.get('department', 'N/A')}")
     st.sidebar.markdown(f"**📧 Email:** {instructor_info.get('email', 'N/A')}")
 
-    render_quick_meet_sidebar("instructor", instructor_info['username'])
-
     instructor_pages = {
         "Dashboard": ("dashboard", show_instructor_dashboard),
         "Class Management": ("class_management", show_instructor_class_management),
@@ -854,16 +852,18 @@ def show_instructor_interface():
     except StopIteration:
         default_index = 0
 
+    st.sidebar.markdown("---")
     selected_label = st.sidebar.radio("Instructor Navigation", page_labels, index=default_index)
     st.session_state.instructor_page = label_to_key[selected_label]
 
-    page_function = instructor_pages[selected_label][1]
+    render_quick_meet_sidebar("instructor", instructor_info['username'])
 
     if st.session_state.instructor_page == "attendance" and not st.session_state.get('selected_class'):
         st.info("Select a class from Class Management before taking attendance.")
         show_instructor_class_management()
         return
 
+    page_function = instructor_pages[selected_label][1]
     page_function()
 
     render_active_quick_meet_embed("instructor")
