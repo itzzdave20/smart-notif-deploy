@@ -221,6 +221,7 @@ def show_admin_login():
                     st.session_state.admin_logged_in = True
                     st.session_state.admin_session_id = result
                     st.session_state.admin_username = username
+                    st.session_state.admin_auth = auth  # Store auth instance in session state
                     st.success("✅ Login successful!")
                     st.rerun()
                 else:

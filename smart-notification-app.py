@@ -1040,6 +1040,33 @@ def main():
 
 def show_admin_interface():
     """Show admin interface"""
+    # Ensure admin_auth is initialized and sessions are loaded
+    if 'admin_auth' not in st.session_state:
+        st.session_state.admin_auth = AdminAuth()
+    else:
+        # Reload sessions to ensure we have the latest data
+        st.session_state.admin_auth.load_sessions()
+    
+    # Verify session is still valid
+    if 'admin_session_id' not in st.session_state:
+        st.error("No admin session found. Please log in again.")
+        # Clear any stale state
+        if 'admin_logged_in' in st.session_state:
+            del st.session_state.admin_logged_in
+        show_admin_login()
+        return
+    
+    # Verify session is still valid
+    is_valid, session = st.session_state.admin_auth.verify_session(st.session_state.admin_session_id)
+    if not is_valid:
+        st.error("Admin session expired or invalid. Please log in again.")
+        # Clear stale session state
+        for key in ['admin_logged_in', 'admin_session_id', 'admin_username']:
+            if key in st.session_state:
+                del st.session_state[key]
+        show_admin_login()
+        return
+    
     # Admin logout button in sidebar
     show_admin_logout()
 
@@ -1047,6 +1074,7 @@ def show_admin_interface():
     user_info = st.session_state.admin_auth.get_user_info(st.session_state.admin_session_id)
     if not user_info:
         st.error("Unable to load admin information. Please log in again.")
+        show_admin_login()
         return
 
     st.sidebar.markdown("---")
