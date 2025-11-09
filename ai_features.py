@@ -415,15 +415,22 @@ class AIFeatures:
             if conversation_history is None:
                 conversation_history = []
             
+            # Ensure we have a response variable
+            response = None
+            
             # Simple rule-based responses for common questions
             user_message_lower = user_message.lower().strip()
             
+            # Check for empty message
+            if not user_message_lower:
+                response = "I'm here to help! Please ask me a question about assignments, classes, attendance, or any academic topic."
+            
             # Greetings (check first)
-            if any(word in user_message_lower for word in ['hello', 'hi', 'hey', 'greetings', 'good morning', 'good afternoon', 'good evening']):
+            elif any(word in user_message_lower for word in ['hello', 'hi', 'hey', 'greetings', 'good morning', 'good afternoon', 'good evening']):
                 response = "Hello! I'm your AI assistant. I can help you with assignments, classes, attendance, and more. How can I assist you today?"
             
-            # Computer Science / Programming questions
-            elif any(word in user_message_lower for word in ['computer science', 'programming', 'code', 'coding', 'algorithm', 'software', 'developer', 'python', 'java', 'javascript', 'html', 'css', 'database', 'data structure']):
+            # Computer Science / Programming questions (check before general "what" questions)
+            elif any(word in user_message_lower for word in ['computer science', 'cs ', 'programming', 'code', 'coding', 'algorithm', 'software', 'developer', 'python', 'java', 'javascript', 'html', 'css', 'database', 'data structure', 'variable', 'function', 'loop', 'array', 'list']):
                 response = self._handle_computer_science_question(user_message)
             
             # Assignment help
@@ -438,22 +445,26 @@ class AIFeatures:
             elif any(word in user_message_lower for word in ['attendance', 'present', 'absent', 'mark attendance', 'check attendance']):
                 response = self._handle_attendance_question(user_message)
             
-            # What/How/Why questions (educational)
-            elif user_message_lower.startswith(('what is', 'what are', 'what does', 'what do', 'what was', 'what were')):
+            # What/How/Why questions (educational) - check these after CS topics
+            elif user_message_lower.startswith(('what is', 'what are', 'what does', 'what do', 'what was', 'what were', 'what')):
                 response = self._handle_what_question(user_message)
             
-            elif user_message_lower.startswith(('how to', 'how do', 'how does', 'how can', 'how should')):
+            elif user_message_lower.startswith(('how to', 'how do', 'how does', 'how can', 'how should', 'how')):
                 response = self._handle_how_question(user_message)
             
             elif user_message_lower.startswith(('why', 'why is', 'why are', 'why do', 'why does')):
                 response = self._handle_why_question(user_message)
             
             # General questions
-            elif any(word in user_message_lower for word in ['tell me', 'explain', 'describe', 'define', 'meaning']):
+            elif any(word in user_message_lower for word in ['tell me', 'explain', 'describe', 'define', 'meaning', 'about']):
                 response = self._handle_explain_question(user_message)
             
             # Default response with better context
             else:
+                response = self._generate_contextual_response(user_message, conversation_history)
+            
+            # Ensure response is never None
+            if response is None or not response:
                 response = self._generate_contextual_response(user_message, conversation_history)
             
             return {
@@ -519,7 +530,7 @@ class AIFeatures:
     
     def _handle_computer_science_question(self, message: str) -> str:
         """Handle computer science and programming questions"""
-        message_lower = message.lower()
+        message_lower = message.lower().strip()
         
         if 'programming' in message_lower or 'what is programming' in message_lower:
             return ("Programming is the process of creating instructions for computers to follow. It involves:\n\n"
@@ -529,7 +540,7 @@ class AIFeatures:
                     "• Debugging and testing code to ensure it works correctly\n\n"
                     "Programming is a fundamental skill in computer science that allows you to create software, automate tasks, and solve complex problems. Would you like to know more about a specific programming language or concept?")
         
-        elif 'computer science' in message_lower:
+        elif 'computer science' in message_lower or 'cs ' in message_lower or message_lower == 'cs':
             return ("Computer Science is the study of computers and computational systems. It covers:\n\n"
                     "• **Programming & Software Development**: Writing code to create applications\n"
                     "• **Algorithms & Data Structures**: Efficient problem-solving methods\n"
@@ -570,36 +581,65 @@ class AIFeatures:
     
     def _handle_what_question(self, message: str) -> str:
         """Handle 'what is/are' questions"""
-        message_lower = message.lower()
+        message_lower = message.lower().strip()
         
         # Extract the topic after "what is/are"
         if 'what is' in message_lower:
             topic = message_lower.split('what is', 1)[1].strip()
         elif 'what are' in message_lower:
             topic = message_lower.split('what are', 1)[1].strip()
-        else:
+        elif message_lower.startswith('what'):
             topic = message_lower.replace('what', '').strip()
+        else:
+            topic = message_lower
+        
+        # Remove question marks and extra words
+        topic = topic.replace('?', '').strip()
+        if topic.startswith('about'):
+            topic = topic.replace('about', '').strip()
         
         # Provide specific answers for common questions
-        if 'programming' in topic:
+        if 'programming' in topic or 'program' in topic:
             return self._handle_computer_science_question("what is programming")
-        elif 'computer science' in topic or 'cs' in topic:
+        elif 'computer science' in topic or 'cs ' in topic or topic == 'cs':
             return self._handle_computer_science_question("computer science")
         elif 'algorithm' in topic:
             return self._handle_computer_science_question("algorithm")
         elif 'data structure' in topic:
             return self._handle_computer_science_question("data structure")
+        elif 'variable' in topic:
+            return ("A variable is a named storage location in a program that holds a value. Key points:\n\n"
+                   "• Variables have a name (identifier) and a data type\n"
+                   "• They can store different types of data (numbers, text, etc.)\n"
+                   "• Values can be changed during program execution\n"
+                   "• Examples: `x = 5`, `name = 'John'`, `is_active = True`\n\n"
+                   "Variables are fundamental to programming - they allow programs to store and manipulate data!")
+        elif 'function' in topic:
+            return ("A function is a reusable block of code that performs a specific task. Key concepts:\n\n"
+                   "• Functions take inputs (parameters) and can return outputs\n"
+                   "• They help organize code and avoid repetition\n"
+                   "• Functions can be called multiple times with different inputs\n"
+                   "• Example: `def add(a, b): return a + b`\n\n"
+                   "Functions are essential for writing clean, organized, and maintainable code!")
+        elif 'loop' in topic:
+            return ("A loop is a programming construct that repeats a block of code. Types:\n\n"
+                   "• **For loops**: Repeat a specific number of times\n"
+                   "• **While loops**: Repeat while a condition is true\n"
+                   "• **Do-while loops**: Execute at least once, then check condition\n\n"
+                   "Loops are used to process lists, perform calculations, and automate repetitive tasks!")
         else:
             # Generic but helpful response
             keywords = self.extract_keywords(topic, max_keywords=3)
-            return (f"Great question! '{topic.title()}' is an interesting topic. "
-                   f"While I can provide general guidance, for detailed explanations about {', '.join(keywords) if keywords else 'this topic'}, "
-                   f"I recommend:\n\n"
+            if not keywords:
+                keywords = [topic[:20]] if topic else ['this topic']
+            
+            return (f"Great question! I'd be happy to explain '{topic.title() if topic else 'that'}'.\n\n"
+                   f"While I can provide general guidance, for detailed explanations, I recommend:\n\n"
                    f"• Consulting your course materials and textbooks\n"
                    f"• Asking your instructor for clarification\n"
                    f"• Using online educational resources\n"
                    f"• Reviewing class notes and lecture recordings\n\n"
-                   f"Would you like help with a specific aspect of this topic, or do you have questions about your assignments?")
+                   f"Would you like help with a specific aspect of {', '.join(keywords) if keywords else 'this topic'}, or do you have questions about your assignments?")
     
     def _handle_how_question(self, message: str) -> str:
         """Handle 'how to/do/does' questions"""
@@ -650,21 +690,29 @@ class AIFeatures:
     
     def _handle_explain_question(self, message: str) -> str:
         """Handle 'explain', 'tell me', 'describe' questions"""
-        message_lower = message.lower()
+        message_lower = message.lower().strip()
         
         # Extract topic
         topic = message_lower
-        for word in ['explain', 'tell me about', 'describe', 'define', 'what is the meaning of']:
+        for word in ['explain', 'tell me about', 'tell me', 'describe', 'define', 'what is the meaning of']:
             if word in topic:
                 topic = topic.split(word, 1)[1].strip()
                 break
         
+        # Clean up topic
+        topic = topic.replace('?', '').strip()
+        if not topic:
+            topic = message_lower
+        
         # Check if it's a CS/programming topic
-        if any(word in topic for word in ['programming', 'computer science', 'code', 'algorithm', 'data structure']):
+        if any(word in topic for word in ['programming', 'computer science', 'cs', 'code', 'algorithm', 'data structure', 'variable', 'function', 'loop']):
             return self._handle_computer_science_question(topic)
         
         keywords = self.extract_keywords(topic, max_keywords=3)
-        return (f"I'd be happy to help explain {topic if topic else 'this topic'}! "
+        if not keywords and topic:
+            keywords = [topic[:30]]
+        
+        return (f"I'd be happy to help explain {topic if topic and len(topic) < 50 else 'this topic'}! "
                f"Here's what I can tell you:\n\n"
                f"• For academic concepts, check your course materials and textbooks\n"
                f"• For programming topics, I can provide general guidance\n"

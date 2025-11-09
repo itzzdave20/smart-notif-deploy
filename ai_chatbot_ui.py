@@ -44,27 +44,51 @@ def show_ai_chatbot(role: str = "student"):
         # Get AI response
         with st.spinner("Thinking..."):
             try:
+                # Get conversation history (exclude the current user message we just added)
                 conversation_history = [
                     {'role': msg['role'], 'content': msg['content']} 
-                    for msg in st.session_state[f'{role}_chat_history'][-10:]  # Last 10 messages for context
+                    for msg in st.session_state[f'{role}_chat_history'][:-1][-10:]  # Last 10 messages, excluding current
                 ]
                 
                 ai_response = ai.chat_with_ai(user_input, conversation_history)
                 
                 # Add AI response to history
-                if ai_response and 'response' in ai_response:
+                if ai_response and isinstance(ai_response, dict) and 'response' in ai_response:
+                    response_text = ai_response['response']
+                    if response_text and response_text.strip():
+                        st.session_state[f'{role}_chat_history'].append({
+                            'role': 'assistant',
+                            'content': response_text,
+                            'timestamp': ai_response.get('timestamp', datetime.now().isoformat())
+                        })
+                    else:
+                        # Fallback if response is empty
+                        st.session_state[f'{role}_chat_history'].append({
+                            'role': 'assistant',
+                            'content': "I'm here to help! Could you please rephrase your question?",
+                            'timestamp': datetime.now().isoformat()
+                        })
+                else:
+                    # Fallback if response format is wrong
+                    st.error("Failed to get AI response. Please try again.")
                     st.session_state[f'{role}_chat_history'].append({
                         'role': 'assistant',
-                        'content': ai_response['response'],
-                        'timestamp': ai_response.get('timestamp', datetime.now().isoformat())
+                        'content': "I apologize, but I couldn't process your question. Please try rephrasing it.",
+                        'timestamp': datetime.now().isoformat()
                     })
-                else:
-                    st.error("Failed to get AI response. Please try again.")
             except AttributeError as e:
                 st.error(f"AI Chatbot error: {str(e)}. Please refresh the page.")
-                st.stop()
+                # Recreate AI features instance
+                st.session_state.ai_features = AIFeatures()
+                st.session_state[f'{role}_chat_history'].append({
+                    'role': 'assistant',
+                    'content': "I encountered an error. Please try asking your question again.",
+                    'timestamp': datetime.now().isoformat()
+                })
             except Exception as e:
                 st.error(f"An error occurred: {str(e)}. Please try again.")
+                import traceback
+                st.error(traceback.format_exc())
                 # Add a fallback response
                 st.session_state[f'{role}_chat_history'].append({
                     'role': 'assistant',
