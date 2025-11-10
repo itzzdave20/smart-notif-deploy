@@ -518,35 +518,6 @@ def show_instructor_login():
                 else:
                     st.warning("Please fill in all fields")
     st.markdown('</div>', unsafe_allow_html=True)
-    
-    # Show default credentials info
-    with st.expander("ℹ️ Default Instructor Credentials"):
-        st.code("""
-        Username: instructor
-        Password: instructor123
-        """)
-        st.warning("⚠️ Please change the default password after first login!")
-
-    # AI Assistant panel for instructors
-    with st.expander("🤖 AI Assistant (optional)"):
-        ai = AIFeatures()
-        user_text = st.text_area("Describe class goals or announcements")
-        if st.button("Analyze", key="instructor_ai_analyze"):
-            if user_text.strip():
-                smart = ai.generate_smart_notification(user_text, notification_type='announcement')
-                st.write(f"**Suggested Title:** {smart['title']}")
-                st.write(f"**Message:** {smart['message']}")
-                st.write(f"**Category:** {smart['category']} | **Priority:** {smart['priority']}")
-                st.write(f"**Suggested time:** {smart['suggested_time'].strftime('%Y-%m-%d %H:%M')}")
-
-    # Quick Meet section
-    with st.expander("📹 Quick Meet"):
-        default_room = suggest_room_for_user(st.session_state.get('instructor_username', 'instructor'))
-        room = st.text_input("Room name", value=default_room, key="instructor_meet_room")
-        if st.button("Start/Join Meeting", key="instructor_meet_start"):
-            st.info("If the embed does not load, click the 'open in new tab' link below.")
-            render_meeting(room_name=room, height=600)
-            st.markdown(f"[Open in new tab](https://meet.jit.si/{room})")
 
 def show_instructor_logout():
     """Display instructor logout button"""

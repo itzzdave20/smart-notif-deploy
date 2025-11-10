@@ -6,6 +6,8 @@ import json
 import os
 import pandas as pd
 import plotly.express as px
+from ai_features import AIFeatures
+from meetings import render_meeting, suggest_room_for_user
 
 class StudentAuth:
     def __init__(self):

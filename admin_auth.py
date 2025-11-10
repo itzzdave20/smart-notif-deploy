@@ -229,14 +229,6 @@ def show_admin_login():
                 st.warning("Please enter both username and password")
     
     st.markdown('</div>', unsafe_allow_html=True)
-    
-    # Show default credentials info
-    with st.expander("ℹ️ Default Admin Credentials"):
-        st.code("""
-        Username: admin
-        Password: admin123
-        """)
-        st.warning("⚠️ Please change the default password after first login!")
 
 def show_admin_logout():
     """Display admin logout button"""
