@@ -6,8 +6,6 @@ import json
 import os
 import pandas as pd
 import plotly.express as px
-from ai_features import AIFeatures
-from meetings import render_meeting, suggest_room_for_user
 
 class StudentAuth:
     def __init__(self):
@@ -385,36 +383,6 @@ def show_student_login():
                     st.warning("Please fill in all fields")
     
     st.markdown('</div>', unsafe_allow_html=True)
-    
-    # Show default credentials info
-    with st.expander("ℹ️ Default Student Credentials"):
-        st.code("""
-        Username: student
-        Password: student123
-        """)
-        st.warning("⚠️ Please change the default password after first login!")
-
-    # AI Assistant panel (optional helper on login screen)
-    with st.expander("🤖 AI Assistant (optional)"):
-        ai = AIFeatures()
-        user_text = st.text_area("Tell the assistant what you want to focus on today")
-        if st.button("Analyze", key="student_ai_analyze"):
-            if user_text.strip():
-                sentiment = ai.analyze_sentiment(user_text)
-                keywords = ai.extract_keywords(user_text, max_keywords=5)
-                suggestion = ai.suggest_optimal_time("announcement")
-                st.write(f"**Sentiment:** {sentiment.get('sentiment','neutral').title()} (conf: {sentiment.get('confidence',0.5):.2f})")
-                st.write(f"**Keywords:** {', '.join(keywords) if keywords else 'None'}")
-                st.write(f"**Suggested time to start:** {suggestion.strftime('%Y-%m-%d %H:%M')}")
-
-    # Quick Meet section
-    with st.expander("📹 Quick Meet"):
-        default_room = suggest_room_for_user(st.session_state.get('student_username', 'student'))
-        room = st.text_input("Room name", value=default_room, key="student_meet_room")
-        if st.button("Start/Join Meeting", key="student_meet_start"):
-            st.info("If the embed does not load, click the 'open in new tab' link below.")
-            render_meeting(room_name=room, height=600)
-            st.markdown(f"[Open in new tab](https://meet.jit.si/{room})")
 
 def show_student_logout():
     """Display student logout button"""
