@@ -155,11 +155,39 @@ section[data-testid="stSidebar"]::-webkit-scrollbar-thumb {
 @media (max-width: 992px) {
     section[data-testid="stSidebar"] {
         padding: 18px 16px 32px;
+        transition: transform 0.2s ease, width 0.2s ease, padding 0.2s ease;
     }
 
     section[data-testid="stSidebar"] .block-container,
     section[data-testid="stSidebar"] [data-testid="stSidebarContent"] {
         padding: 16px 14px 28px;
+    }
+
+    /* Ensure the sidebar fully collapses on mobile when closed */
+    section[data-testid="stSidebar"][aria-expanded="false"] {
+        width: 0 !important;
+        min-width: 0 !important;
+        max-width: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        overflow: hidden !important;
+        transform: translateX(-100%) !important;
+        box-shadow: none !important;
+        pointer-events: none !important;
+        opacity: 0 !important;
+    }
+
+    /* When expanded, ensure it is visible */
+    section[data-testid="stSidebar"][aria-expanded="true"] {
+        transform: translateX(0) !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+    }
+
+    /* Prevent leftover spacing on main content when sidebar is closed */
+    div[data-testid="stAppViewContainer"] > div:has(> section[data-testid="stSidebar"][aria-expanded="false"]) + main,
+    div[data-testid="stAppViewContainer"] > aside[aria-expanded="false"] + main {
+        margin-left: 0 !important;
     }
 }
 </style>
