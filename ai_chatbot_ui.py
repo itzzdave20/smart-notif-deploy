@@ -5,7 +5,6 @@ from ai_features import AIFeatures
 def show_ai_chatbot(role: str = "student"):
     """Show AI Chatbot interface"""
     st.header("🤖 AI Chatbot Assistant")
-    st.caption("Ask me anything! I can help with assignments, classes, attendance, and more.")
     
     # Initialize conversation history in session state
     if f'{role}_chat_history' not in st.session_state:
@@ -16,6 +15,15 @@ def show_ai_chatbot(role: str = "student"):
         st.session_state.ai_features = AIFeatures()
     
     ai = st.session_state.ai_features
+    
+    # Show AI mode status
+    ai_mode = "Rule-based"
+    if hasattr(ai, 'openai_client') and ai.openai_client:
+        ai_mode = "OpenAI API"
+    elif hasattr(ai, 'api_key') and ai.api_key:
+        ai_mode = "OpenAI API (configured)"
+    
+    st.caption(f"Ask me anything! I can help with assignments, classes, attendance, and more. | Mode: {ai_mode}")
     
     # Display chat history
     chat_container = st.container()
@@ -56,10 +64,20 @@ def show_ai_chatbot(role: str = "student"):
                 if ai_response and isinstance(ai_response, dict) and 'response' in ai_response:
                     response_text = ai_response['response']
                     if response_text and response_text.strip():
+                        # Add source info to message
+                        source = ai_response.get('source', 'unknown')
+                        model = ai_response.get('model', '')
+                        source_info = f" ({source}"
+                        if model:
+                            source_info += f" - {model}"
+                        source_info += ")"
+                        
                         st.session_state[f'{role}_chat_history'].append({
                             'role': 'assistant',
                             'content': response_text,
-                            'timestamp': ai_response.get('timestamp', datetime.now().isoformat())
+                            'timestamp': ai_response.get('timestamp', datetime.now().isoformat()),
+                            'source': source,
+                            'model': model
                         })
                     else:
                         # Fallback if response is empty
@@ -107,6 +125,20 @@ def show_ai_chatbot(role: str = "student"):
             st.rerun()
         
         st.markdown("---")
+        st.markdown("### 🤖 AI Status")
+        
+        # Show AI configuration status
+        if hasattr(ai, 'openai_client') and ai.openai_client:
+            st.success("✅ OpenAI API Active")
+            st.caption("Using advanced AI model")
+        elif hasattr(ai, 'api_key') and ai.api_key:
+            st.info("🔑 OpenAI API Key Configured")
+            st.caption("API may be unavailable")
+        else:
+            st.warning("⚠️ Using Rule-based Mode")
+            st.caption("Set OPENAI_API_KEY for better responses")
+        
+        st.markdown("---")
         st.markdown("### 💡 Tips")
         st.info("""
         **I can help you with:**
@@ -114,6 +146,7 @@ def show_ai_chatbot(role: str = "student"):
         - 📚 Class information
         - ✅ Attendance questions
         - ❓ General inquiries
+        - 💻 Programming questions
         
         Just ask me anything!
         """)
@@ -121,4 +154,15 @@ def show_ai_chatbot(role: str = "student"):
         # Show conversation stats
         if st.session_state[f'{role}_chat_history']:
             st.metric("Messages", len(st.session_state[f'{role}_chat_history']))
+            
+            # Show last response source
+            last_msg = st.session_state[f'{role}_chat_history'][-1]
+            if last_msg.get('role') == 'assistant' and last_msg.get('source'):
+                source = last_msg.get('source', 'unknown')
+                if source == 'openai':
+                    st.caption(f"Last: OpenAI API")
+                elif source == 'api':
+                    st.caption(f"Last: Local API")
+                else:
+                    st.caption(f"Last: Rule-based")
 

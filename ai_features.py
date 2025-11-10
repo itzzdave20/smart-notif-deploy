@@ -2,13 +2,27 @@ import re
 import numpy as np
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
+import os
+import requests
 # from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification
 # import torch
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import schedule
 import time
-from config import SENTIMENT_ANALYSIS_MODEL, MAX_NOTIFICATION_LENGTH
+from config import (
+    SENTIMENT_ANALYSIS_MODEL, MAX_NOTIFICATION_LENGTH,
+    OPENAI_API_KEY, OPENAI_MODEL, AI_API_ENABLED, AI_API_URL,
+    AI_TEMPERATURE, AI_MAX_TOKENS, AI_USE_API
+)
+
+# Try to import OpenAI
+try:
+    from openai import OpenAI
+    OPENAI_AVAILABLE = True
+except ImportError:
+    OPENAI_AVAILABLE = False
+    print("WARNING: OpenAI library not available. Install with: pip install openai")
 
 # Try to import torch, fall back if not available
 try:
@@ -37,6 +51,17 @@ class AIFeatures:
         self.load_sentiment_model()
         self.vectorizer = TfidfVectorizer(max_features=1000, stop_words='english')
         self.notification_patterns = []
+        
+        # Initialize OpenAI client if available
+        self.openai_client = None
+        self.api_key = os.getenv('OPENAI_API_KEY') or OPENAI_API_KEY
+        if OPENAI_AVAILABLE and self.api_key and AI_USE_API:
+            try:
+                self.openai_client = OpenAI(api_key=self.api_key)
+                print("✅ OpenAI client initialized successfully")
+            except Exception as e:
+                print(f"⚠️ Failed to initialize OpenAI client: {e}")
+                self.openai_client = None
         
     def load_sentiment_model(self):
         """Load sentiment analysis model"""
@@ -415,6 +440,118 @@ class AIFeatures:
             if conversation_history is None:
                 conversation_history = []
             
+            # Try OpenAI API first if available
+            if AI_USE_API and self.openai_client:
+                try:
+                    return self._chat_with_openai(user_message, conversation_history)
+                except Exception as e:
+                    print(f"OpenAI API error: {e}, falling back to rule-based")
+                    # Fall through to rule-based
+            
+            # Try local API endpoint if configured
+            if AI_API_ENABLED and AI_API_URL:
+                try:
+                    return self._chat_with_api(user_message, conversation_history)
+                except Exception as e:
+                    print(f"API endpoint error: {e}, falling back to rule-based")
+                    # Fall through to rule-based
+            
+            # Fallback to rule-based responses
+            return self._chat_with_rules(user_message, conversation_history)
+            
+        except Exception as e:
+            print(f"Error in AI chat: {e}")
+            import traceback
+            print(traceback.format_exc())
+            return {
+                'response': "I apologize, but I encountered an error. Please try rephrasing your question.",
+                'timestamp': datetime.now().isoformat(),
+                'confidence': 0.0,
+                'error': str(e)
+            }
+    
+    def _chat_with_openai(self, user_message: str, conversation_history: List[Dict] = None) -> Dict:
+        """Chat using OpenAI API"""
+        if not self.openai_client:
+            raise Exception("OpenAI client not initialized")
+        
+        # Build messages for OpenAI
+        messages = []
+        
+        # System message with context
+        system_message = {
+            "role": "system",
+            "content": """You are a helpful AI assistant for a smart notification and learning management system. 
+            You help students, instructors, and admins with:
+            - Assignment help and academic questions
+            - Class information and enrollment
+            - Attendance tracking
+            - General academic and programming questions
+            - Study tips and learning strategies
+            
+            Be friendly, concise, and helpful. Provide accurate information and guide users effectively."""
+        }
+        messages.append(system_message)
+        
+        # Add conversation history
+        if conversation_history:
+            for msg in conversation_history[-10:]:  # Last 10 messages for context
+                role = msg.get('role', 'user')
+                content = msg.get('content', '')
+                if role in ['user', 'assistant']:
+                    messages.append({"role": role, "content": content})
+        
+        # Add current user message
+        messages.append({"role": "user", "content": user_message})
+        
+        # Call OpenAI API
+        response = self.openai_client.chat.completions.create(
+            model=OPENAI_MODEL,
+            messages=messages,
+            temperature=AI_TEMPERATURE,
+            max_tokens=AI_MAX_TOKENS
+        )
+        
+        ai_response = response.choices[0].message.content
+        
+        return {
+            'response': ai_response,
+            'timestamp': datetime.now().isoformat(),
+            'confidence': 0.95,
+            'model': OPENAI_MODEL,
+            'source': 'openai'
+        }
+    
+    def _chat_with_api(self, user_message: str, conversation_history: List[Dict] = None) -> Dict:
+        """Chat using local API endpoint"""
+        payload = {
+            'message': user_message,
+            'conversation_history': conversation_history or []
+        }
+        
+        response = requests.post(
+            AI_API_URL,
+            json=payload,
+            timeout=10
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            return {
+                'response': data.get('response', ''),
+                'timestamp': datetime.now().isoformat(),
+                'confidence': data.get('confidence', 0.8),
+                'source': 'api'
+            }
+        else:
+            raise Exception(f"API returned status {response.status_code}")
+    
+    def _chat_with_rules(self, user_message: str, conversation_history: List[Dict] = None) -> Dict:
+        """Fallback rule-based chatbot"""
+        try:
+            if conversation_history is None:
+                conversation_history = []
+            
             # Ensure we have a response variable
             response = None
             
@@ -470,18 +607,20 @@ class AIFeatures:
             return {
                 'response': response,
                 'timestamp': datetime.now().isoformat(),
-                'confidence': 0.8
+                'confidence': 0.8,
+                'source': 'rule-based'
             }
             
         except Exception as e:
-            print(f"Error in AI chat: {e}")
+            print(f"Error in rule-based chat: {e}")
             import traceback
             print(traceback.format_exc())
             return {
                 'response': "I apologize, but I encountered an error. Please try rephrasing your question.",
                 'timestamp': datetime.now().isoformat(),
                 'confidence': 0.0,
-                'error': str(e)
+                'error': str(e),
+                'source': 'rule-based'
             }
     
     def _handle_assignment_help(self, message: str) -> str:
