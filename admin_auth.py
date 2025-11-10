@@ -111,6 +111,12 @@ class AdminAuth:
     
     def verify_session(self, session_id):
         """Verify admin session"""
+        if not session_id:
+            return False, None
+        
+        # Reload sessions from disk to ensure we have the latest data
+        self.load_sessions()
+        
         if session_id not in self.sessions:
             return False, None
         
@@ -250,10 +256,16 @@ def check_admin_auth():
     if 'admin_logged_in' not in st.session_state or not st.session_state.admin_logged_in:
         return False
     
-    if 'admin_session_id' not in st.session_state:
+    if 'admin_session_id' not in st.session_state or not st.session_state.admin_session_id:
         return False
     
-    auth = AdminAuth()
+    # Use existing admin_auth instance if available, otherwise create new one
+    if 'admin_auth' in st.session_state:
+        auth = st.session_state.admin_auth
+        auth.load_sessions()  # Reload to ensure latest data
+    else:
+        auth = AdminAuth()
+    
     is_valid, session = auth.verify_session(st.session_state.admin_session_id)
     
     if not is_valid:

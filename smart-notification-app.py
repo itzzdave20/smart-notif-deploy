@@ -1043,10 +1043,30 @@ def show_admin_interface():
     # Admin logout button in sidebar
     show_admin_logout()
 
+    # Ensure admin_auth is initialized and sessions are loaded
+    if 'admin_auth' not in st.session_state:
+        st.session_state.admin_auth = AdminAuth()
+    else:
+        # Reload sessions to ensure we have latest data
+        st.session_state.admin_auth.load_sessions()
+    
+    # Check if session_id exists
+    if 'admin_session_id' not in st.session_state or not st.session_state.admin_session_id:
+        st.error("No active session found. Please log in again.")
+        # Clear any stale session state
+        for key in ['admin_logged_in', 'admin_session_id', 'admin_username']:
+            if key in st.session_state:
+                del st.session_state[key]
+        return
+
     # Show user info in sidebar
     user_info = st.session_state.admin_auth.get_user_info(st.session_state.admin_session_id)
     if not user_info:
         st.error("Unable to load admin information. Please log in again.")
+        # Clear stale session state
+        for key in ['admin_logged_in', 'admin_session_id', 'admin_username']:
+            if key in st.session_state:
+                del st.session_state[key]
         return
 
     st.sidebar.markdown("---")
