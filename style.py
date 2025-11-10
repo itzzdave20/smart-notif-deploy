@@ -1,11 +1,18 @@
 from typing import Dict
 import string
 
-# Centralized design tokens
-PRIMARY_COLOR = "#FF6B6B"
+# Centralized design tokens - Enhanced Modern Palette
+PRIMARY_COLOR = "#6366F1"  # Indigo - more modern and professional
+SECONDARY_COLOR = "#8B5CF6"  # Purple accent
+ACCENT_COLOR = "#EC4899"  # Pink accent
+SUCCESS_COLOR = "#10B981"  # Green
+WARNING_COLOR = "#F59E0B"  # Amber
+ERROR_COLOR = "#EF4444"  # Red
+INFO_COLOR = "#3B82F6"  # Blue
 BACKGROUND_COLOR = "#FFFFFF"
-SECONDARY_BACKGROUND_COLOR = "#F0F2F6"
-TEXT_COLOR = "#262730"
+SECONDARY_BACKGROUND_COLOR = "#F8FAFC"
+TEXT_COLOR = "#1E293B"
+TEXT_LIGHT = "#64748B"
 
 GLOBAL_CSS = string.Template("""
 <style>
@@ -13,19 +20,38 @@ GLOBAL_CSS = string.Template("""
   
   :root {
     --primary-color: $PRIMARY_COLOR;
-    --primary-dark: #e85b5b;
-    --primary-light: #ff8a8a;
+    --primary-dark: #4F46E5;
+    --primary-light: #818CF8;
+    --secondary-color: $SECONDARY_COLOR;
+    --accent-color: $ACCENT_COLOR;
+    --success-color: $SUCCESS_COLOR;
+    --warning-color: $WARNING_COLOR;
+    --error-color: $ERROR_COLOR;
+    --info-color: $INFO_COLOR;
     --bg-color: $BACKGROUND_COLOR;
     --bg-alt: $SECONDARY_BACKGROUND_COLOR;
     --text-color: $TEXT_COLOR;
-    --text-light: #6b7280;
-    --border-color: #e5e7eb;
+    --text-light: $TEXT_LIGHT;
+    --border-color: #E2E8F0;
+    --border-light: #F1F5F9;
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
     --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    --gradient-primary: linear-gradient(135deg, $PRIMARY_COLOR 0%, #ff8a8a 100%);
-    --gradient-bg: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    --shadow-primary: 0 10px 25px -5px rgba(99, 102, 241, 0.3);
+    --gradient-primary: linear-gradient(135deg, $PRIMARY_COLOR 0%, $SECONDARY_COLOR 100%);
+    --gradient-accent: linear-gradient(135deg, $ACCENT_COLOR 0%, $SECONDARY_COLOR 100%);
+    --gradient-bg: linear-gradient(135deg, #F8FAFC 0%, #F1F5F9 100%);
+    --gradient-card: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%);
+    --gradient-success: linear-gradient(135deg, $SUCCESS_COLOR 0%, #34D399 100%);
+    --gradient-warning: linear-gradient(135deg, $WARNING_COLOR 0%, #FBBF24 100%);
+    --gradient-error: linear-gradient(135deg, $ERROR_COLOR 0%, #F87171 100%);
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --radius-2xl: 24px;
   }
   
   * {
@@ -33,17 +59,36 @@ GLOBAL_CSS = string.Template("""
   }
 
   .main-header {
-    font-size: 2.8rem;
+    font-size: 3rem;
     font-weight: 800;
     background: var(--gradient-primary);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
     text-align: center;
-    margin-bottom: 1.6rem;
-    letter-spacing: -0.02em;
-    text-shadow: 0 2px 4px rgba(255, 107, 107, 0.1);
-    animation: fadeInDown 0.6s ease-out;
+    margin-bottom: 2rem;
+    letter-spacing: -0.03em;
+    position: relative;
+    animation: fadeInDown 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    line-height: 1.2;
+  }
+  
+  .main-header::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 4px;
+    background: var(--gradient-primary);
+    border-radius: 2px;
+    animation: expandWidth 0.8s ease-out 0.3s both;
+  }
+  
+  @keyframes expandWidth {
+    from { width: 0; opacity: 0; }
+    to { width: 60px; opacity: 1; }
   }
   
   @keyframes fadeInDown {
@@ -77,118 +122,252 @@ GLOBAL_CSS = string.Template("""
     0%, 100% { transform: scale(1); }
     50% { transform: scale(1.05); }
   }
+  
+  @keyframes shimmer {
+    0% { background-position: -1000px 0; }
+    100% { background-position: 1000px 0; }
+  }
+  
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+  
+  @keyframes glow {
+    0%, 100% { box-shadow: 0 0 5px rgba(99, 102, 241, 0.5); }
+    50% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.8), 0 0 30px rgba(99, 102, 241, 0.4); }
+  }
+  
+  @keyframes scaleIn {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
 
   .metric-card {
-    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-    padding: 1.5rem;
-    border-radius: 16px;
-    border-left: 4px solid var(--primary-color);
+    background: var(--gradient-card);
+    padding: 2rem;
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--border-light);
+    border-left: 5px solid var(--primary-color);
     box-shadow: var(--shadow-md);
-    transition: all 0.3s ease;
-    animation: fadeIn 0.5s ease-out;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: scaleIn 0.5s ease-out;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.1), transparent);
+    transition: left 0.5s;
+  }
+  
+  .metric-card:hover::before {
+    left: 100%;
   }
   
   .metric-card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-lg);
+    transform: translateY(-6px) scale(1.02);
+    box-shadow: var(--shadow-xl), var(--shadow-primary);
     border-left-width: 6px;
+    border-color: var(--primary-light);
   }
 
   .notification-card {
-    background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);
-    padding: 1.25rem;
-    border-radius: 12px;
-    border: 1px solid var(--border-color);
-    margin-bottom: 1rem;
+    background: var(--gradient-card);
+    padding: 1.5rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-light);
+    margin-bottom: 1.25rem;
     box-shadow: var(--shadow-sm);
-    transition: all 0.3s ease;
-    animation: slideInRight 0.4s ease-out;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: slideInRight 0.5s ease-out;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .notification-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--gradient-primary);
+    transform: scaleY(0);
+    transition: transform 0.3s ease;
   }
   
   .notification-card:hover {
-    box-shadow: var(--shadow-md);
-    transform: translateX(4px);
+    box-shadow: var(--shadow-lg);
+    transform: translateX(6px) scale(1.01);
     border-color: var(--primary-light);
+    background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%);
+  }
+  
+  .notification-card:hover::after {
+    transform: scaleY(1);
   }
 
   /* App background and sidebar colors */
   html, body, [data-testid="stAppViewContainer"], .stApp {
     background: var(--gradient-bg) !important;
     background-attachment: fixed;
+    min-height: 100vh;
+  }
+  
+  /* Animated background pattern */
+  [data-testid="stAppViewContainer"]::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+      radial-gradient(circle at 20% 50%, rgba(99, 102, 241, 0.05) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 50%),
+      radial-gradient(circle at 40% 20%, rgba(236, 72, 153, 0.03) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
   }
   
   [data-testid="stHeader"] {
-    background: rgba(255, 255, 255, 0.8) !important;
-    backdrop-filter: blur(10px);
-    box-shadow: var(--shadow-sm);
-    border-bottom: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.85) !important;
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border-bottom: 1px solid var(--border-light);
+    position: sticky;
+    top: 0;
+    z-index: 100;
   }
   
   [data-testid="stSidebar"] > div {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%) !important;
-    backdrop-filter: blur(10px);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.98) 100%) !important;
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-right: 1px solid var(--border-light);
   }
   
   .block-container {
-    padding-top: 3rem;
-    padding-bottom: 3rem;
-    animation: fadeIn 0.6s ease-out;
+    padding-top: 3.5rem;
+    padding-bottom: 4rem;
+    animation: fadeIn 0.8s ease-out;
+    position: relative;
+    z-index: 1;
   }
 
   .success-message {
-    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
-    color: #155724;
-    padding: 1rem 1.25rem;
-    border-radius: 12px;
-    border: 1px solid #b8e0c5;
-    box-shadow: var(--shadow-sm);
-    animation: slideInRight 0.4s ease-out;
+    background: var(--gradient-success);
+    color: #065F46;
+    padding: 1.25rem 1.5rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    box-shadow: var(--shadow-md);
+    animation: slideInRight 0.5s ease-out;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .success-message::before {
+    content: '✓';
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.5rem;
+    opacity: 0.3;
   }
 
   .error-message {
-    background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
-    color: #721c24;
-    padding: 1rem 1.25rem;
-    border-radius: 12px;
-    border: 1px solid #f1aeb5;
-    box-shadow: var(--shadow-sm);
-    animation: slideInRight 0.4s ease-out;
+    background: var(--gradient-error);
+    color: #991B1B;
+    padding: 1.25rem 1.5rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    box-shadow: var(--shadow-md);
+    animation: slideInRight 0.5s ease-out;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .error-message::before {
+    content: '✕';
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.5rem;
+    opacity: 0.3;
   }
   
   .info-message {
-    background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
-    color: #0c5460;
-    padding: 1rem 1.25rem;
-    border-radius: 12px;
-    border: 1px solid #abdde5;
-    box-shadow: var(--shadow-sm);
-    animation: slideInRight 0.4s ease-out;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
+    color: #1E40AF;
+    padding: 1.25rem 1.5rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    box-shadow: var(--shadow-md);
+    animation: slideInRight 0.5s ease-out;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .info-message::before {
+    content: 'ℹ';
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.5rem;
+    opacity: 0.3;
   }
   
   .warning-message {
-    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
-    color: #856404;
-    padding: 1rem 1.25rem;
-    border-radius: 12px;
-    border: 1px solid #ffe082;
-    box-shadow: var(--shadow-sm);
-    animation: slideInRight 0.4s ease-out;
+    background: var(--gradient-warning);
+    color: #92400E;
+    padding: 1.25rem 1.5rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    box-shadow: var(--shadow-md);
+    animation: slideInRight 0.5s ease-out;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .warning-message::before {
+    content: '⚠';
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.5rem;
+    opacity: 0.3;
   }
 
-  /* Touch-friendly controls */
+  /* Touch-friendly controls - Enhanced */
   .stButton>button {
-    padding: 0.9rem 1.8rem;
+    padding: 1rem 2rem;
     font-size: 1rem;
     font-weight: 600;
     background: var(--gradient-primary) !important;
     color: #ffffff !important;
     border: none !important;
-    border-radius: 12px;
-    box-shadow: var(--shadow-md);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md), var(--shadow-primary);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    font-size: 0.875rem;
+    cursor: pointer;
   }
   
   .stButton>button::before {
@@ -198,28 +377,64 @@ GLOBAL_CSS = string.Template("""
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-    transition: left 0.5s;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.6s;
   }
   
   .stButton>button:hover::before {
     left: 100%;
   }
   
+  .stButton>button::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+  }
+  
+  .stButton>button:active::after {
+    width: 300px;
+    height: 300px;
+  }
+  
   .stButton>button:hover {
-    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-color) 100%) !important;
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
+    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--secondary-color) 100%) !important;
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: var(--shadow-xl), var(--shadow-primary);
   }
   
   .stButton>button:active {
-    transform: translateY(0);
-    box-shadow: var(--shadow-sm);
+    transform: translateY(-1px) scale(0.98);
+    box-shadow: var(--shadow-md);
   }
   
   .stButton>button:focus {
     outline: none;
-    box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.3);
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.4), var(--shadow-lg);
+  }
+  
+  /* Primary button variant */
+  .stButton>button[kind="primary"] {
+    background: var(--gradient-primary) !important;
+    box-shadow: var(--shadow-lg), var(--shadow-primary);
+  }
+  
+  /* Secondary button variant */
+  .stButton>button[kind="secondary"] {
+    background: linear-gradient(135deg, var(--bg-alt) 0%, #FFFFFF 100%) !important;
+    color: var(--primary-color) !important;
+    border: 2px solid var(--primary-color) !important;
+  }
+  
+  .stButton>button[kind="secondary"]:hover {
+    background: var(--gradient-primary) !important;
+    color: #FFFFFF !important;
   }
   .stTextInput>div>div>input,
   .stPassword>div>div>input,
@@ -240,22 +455,49 @@ GLOBAL_CSS = string.Template("""
   .stNumberInput>div>div>input:focus,
   .stTextArea>div>div>textarea:focus {
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
     outline: none;
+    background: #FFFFFF;
   }
   
   .stTextInput>div>div>input:hover,
   .stPassword>div>div>input:hover,
   .stTextArea>div>div>textarea:hover {
     border-color: var(--primary-light);
+    background: #FAFBFC;
+  }
+  
+  .stTextInput>div>div>input,
+  .stPassword>div>div>input,
+  .stTextArea>div>div>textarea {
+    background: #FFFFFF;
   }
 
   /* Links and accents */
   a, .stMarkdown a {
     color: var(--primary-color);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    position: relative;
   }
+  
+  a::after, .stMarkdown a::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: var(--gradient-primary);
+    transition: width 0.3s ease;
+  }
+  
+  a:hover::after, .stMarkdown a:hover::after {
+    width: 100%;
+  }
+  
   a:hover, .stMarkdown a:hover {
-    color: #e85b5b;
+    color: var(--primary-dark);
   }
 
   /* Headings and section accents */
@@ -450,7 +692,7 @@ GLOBAL_CSS = string.Template("""
   input:focus, select:focus, textarea:focus { 
     outline: none;
     border-color: var(--primary-color) !important;
-    box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.15) !important;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15) !important;
   }
   
   /* Select dropdown styling */
@@ -762,9 +1004,16 @@ GLOBAL_CSS = string.Template("""
 </style>
 """).substitute(
     PRIMARY_COLOR=PRIMARY_COLOR,
+    SECONDARY_COLOR=SECONDARY_COLOR,
+    ACCENT_COLOR=ACCENT_COLOR,
+    SUCCESS_COLOR=SUCCESS_COLOR,
+    WARNING_COLOR=WARNING_COLOR,
+    ERROR_COLOR=ERROR_COLOR,
+    INFO_COLOR=INFO_COLOR,
     BACKGROUND_COLOR=BACKGROUND_COLOR,
     SECONDARY_BACKGROUND_COLOR=SECONDARY_BACKGROUND_COLOR,
     TEXT_COLOR=TEXT_COLOR,
+    TEXT_LIGHT=TEXT_LIGHT,
 )
 
 

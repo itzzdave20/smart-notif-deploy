@@ -1,11 +1,11 @@
 # Configuration constants for the Smart Notification App
 
-# Streamlit theme configuration
+# Streamlit theme configuration - Updated to match new modern design
 STREAMLIT_THEME = {
-    "primaryColor": "#FF6B6B",
+    "primaryColor": "#6366F1",  # Indigo - modern and professional
     "backgroundColor": "#FFFFFF",
-    "secondaryBackgroundColor": "#F0F2F6",
-    "textColor": "#262730"
+    "secondaryBackgroundColor": "#F8FAFC",
+    "textColor": "#1E293B"
 }
 
 # AI Configuration
