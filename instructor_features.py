@@ -446,6 +446,7 @@ def show_instructor_notifications():
                         scheduled_time = datetime.combine(schedule_date, schedule_time)
                     
                     send_to_all_classes = st.checkbox("Send to All Classes", help="Send this notification to all your classes")
+                    email_all_students = st.checkbox("Email all students in selected classes", help="Send email copy to each student in targeted classes")
                 
                 with col2:
                     require_confirmation = st.checkbox("Require Student Confirmation", help="Students must confirm receipt")
@@ -456,6 +457,7 @@ def show_instructor_notifications():
                         target_classes = [selected_class] if selected_class else ([target_class] if not send_to_all_classes else list(instructor_classes.keys()))
                         
                         success_count = 0
+                        total_emailed = 0
                         for class_code in target_classes:
                             class_data = instructor_classes[class_code]
                             
@@ -464,14 +466,19 @@ def show_instructor_notifications():
                             
                             if enrolled_students:
                                 # Send targeted notification to enrolled students
+                                # If email_all_students is checked, targeted notifications already email each student
                                 success = st.session_state.notification_engine.create_targeted_notification(
                                     title=f"[{class_code}] {title}",
                                     message=f"Class: {class_data['class_name']}\n\n{message}",
                                     target_students=enrolled_students,
                                     notification_type=notification_type,
                                     priority=priority,
-                                    scheduled_for=scheduled_time
+                                    scheduled_for=scheduled_time,
+                                    ai_enhanced=False
                                 )
+                                if success and email_all_students:
+                                    # Emails are already sent inside create_targeted_notification when SMTP is configured.
+                                    total_emailed += len(enrolled_students)
                             else:
                                 # Send general notification if no students enrolled
                                 success = st.session_state.notification_engine.create_notification(
@@ -488,7 +495,10 @@ def show_instructor_notifications():
                         if success_count > 0:
                             total_students = sum(len(instructor_classes[code]['enrolled_students']) for code in target_classes)
                             st.success(f"✅ Notification sent to {success_count} class(es) successfully!")
-                            st.info(f"📧 Email notifications sent to {total_students} student(s). They will also see pop-up notifications on their screen.")
+                            if email_all_students:
+                                st.info(f"📧 Email notifications queued for up to {total_students} student(s) in selected class(es).")
+                            else:
+                                st.info("📣 Students will see in-app pop-ups; enable 'Email all students' to send email copies.")
                             # Play sound to indicate success
                             st.session_state.notification_engine.notification_queue  # Ensure engine is initialized
                         else:

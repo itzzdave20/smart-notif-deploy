@@ -24,6 +24,49 @@ class NotificationEngine:
         self.ai = AIFeatures()
         self.notification_queue = []
         self.sent_notifications = []
+    
+    def _get_all_student_usernames(self) -> List[str]:
+        """Read all student usernames from students.json."""
+        try:
+            students_file = "students.json"
+            if os.path.exists(students_file):
+                with open(students_file, 'r') as f:
+                    students = json.load(f)
+                    return list(students.keys())
+        except Exception as e:
+            print(f"Error loading students list: {e}")
+        return []
+
+    def broadcast_notification(self, title: str, message: str, notification_type: str = 'info',
+                               priority: int = 1, scheduled_for: datetime = None,
+                               ai_enhanced: bool = False) -> bool:
+        """Broadcast a notification to all students and email them."""
+        try:
+            usernames = self._get_all_student_usernames()
+            if not usernames:
+                # If no list available, create a general notification as fallback
+                print("No students.json found or empty. Creating general notification only.")
+                return self.create_notification(
+                    title=title,
+                    message=message,
+                    notification_type=notification_type,
+                    priority=priority,
+                    scheduled_for=scheduled_for,
+                    ai_enhanced=ai_enhanced
+                )
+            # Send as targeted notifications so each student has a personal record and email
+            return self.create_targeted_notification(
+                title=title,
+                message=message,
+                target_students=usernames,
+                notification_type=notification_type,
+                priority=priority,
+                scheduled_for=scheduled_for,
+                ai_enhanced=ai_enhanced
+            )
+        except Exception as e:
+            print(f"Error broadcasting notification: {e}")
+            return False
         
     def create_notification(self, title: str, message: str, notification_type: str = 'info', 
                           priority: int = 1, scheduled_for: datetime = None, 

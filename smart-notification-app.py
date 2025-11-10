@@ -403,7 +403,7 @@ def show_browser_notification(title, body):
         <script>
         (function(){
           try {
-            const show = () => new Notification({ title: __TITLE__, body: __BODY__ });
+            const show = () => new Notification(__TITLE__, { body: __BODY__ });
             if (!('Notification' in window)) return;
             if (Notification.permission === 'granted') {
               show();
@@ -418,6 +418,100 @@ def show_browser_notification(title, body):
         .replace("__BODY__", json.dumps(body))
     )
     st.markdown(script, unsafe_allow_html=True)
+
+def show_in_app_popup(title: str, message: str, duration_ms: int = 6000):
+    """Render a non-blocking in-app popup (toast) for the current user."""
+    html = (
+        """
+        <style>
+        .toast-container {
+          position: fixed;
+          z-index: 99999;
+          right: 16px;
+          bottom: 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          pointer-events: none;
+        }
+        .toast {
+          pointer-events: auto;
+          min-width: 280px;
+          max-width: 92vw;
+          background: #0f172a;
+          color: #f8fafc;
+          padding: 12px 14px;
+          border-radius: 12px;
+          box-shadow: 0 12px 32px rgba(2,6,23,0.45);
+          border: 1px solid rgba(148,163,184,0.25);
+          transform: translateY(20px);
+          opacity: 0;
+          transition: all 180ms ease;
+        }
+        .toast.show {
+          transform: translateY(0);
+          opacity: 1;
+        }
+        .toast h4 {
+          margin: 0 0 6px 0;
+          font-size: 14px;
+        }
+        .toast p {
+          margin: 0;
+          font-size: 13px;
+          line-height: 1.4;
+          white-space: pre-wrap;
+        }
+        .toast .close-btn {
+          position: absolute;
+          top: 6px;
+          right: 8px;
+          background: transparent;
+          border: none;
+          color: #cbd5e1;
+          cursor: pointer;
+          font-size: 16px;
+        }
+        @media (max-width: 640px) {
+          .toast-container {
+            right: 10px;
+            left: 10px;
+          }
+          .toast {
+            width: auto;
+          }
+        }
+        </style>
+        <div id="toast-container" class="toast-container"></div>
+        <script>
+        (function(){
+          try {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            const t = document.createElement('div');
+            t.className = 'toast';
+            t.innerHTML = `
+              <button class="close-btn" aria-label="Close">×</button>
+              <h4>__TITLE__</h4>
+              <p>__BODY__</p>
+            `;
+            container.appendChild(t);
+            requestAnimationFrame(() => t.classList.add('show'));
+            const close = () => {
+              t.classList.remove('show');
+              setTimeout(() => t.remove(), 200);
+            };
+            t.querySelector('.close-btn').addEventListener('click', close);
+            setTimeout(close, __DURATION__);
+          } catch(e) {}
+        })();
+        </script>
+        """
+        .replace("__TITLE__", json.dumps(title)[1:-1])
+        .replace("__BODY__", json.dumps(message)[1:-1])
+        .replace("__DURATION__", str(int(duration_ms)))
+    )
+    st.markdown(html, unsafe_allow_html=True)
 
 # QR Code Functions
 def generate_qr_code(data, size=200):
@@ -826,6 +920,38 @@ def show_student_interface():
     student_pages[selected_label][1]()
 
     render_active_quick_meet_embed("student")
+
+    # After rendering page, check for new notifications and pop up
+    try:
+        db = st.session_state.db
+        username = student_info['username']
+        last_seen = st.session_state.get('student_last_seen_notification_ts')
+        notifications = db.get_notifications(limit=50)
+        recent = []
+        for n in notifications or []:
+            # Targeted to this student or general broadcast (no target_student field)
+            if n.get('target_student') and n.get('target_student') != username:
+                continue
+            created_at = n.get('created_at') or n.get('timestamp') or ""
+            # Accept both isoformat and plain
+            try:
+                created_dt = datetime.fromisoformat(created_at) if created_at else datetime.now()
+            except Exception:
+                created_dt = datetime.now()
+            if last_seen is None or created_dt.isoformat() > last_seen:
+                recent.append((created_dt, n))
+        if recent:
+            recent.sort(key=lambda x: x[0])
+            # Show up to 3 most recent as popups
+            for _, n in recent[-3:]:
+                title = n.get('title', 'Notification')
+                message = n.get('message', '')
+                show_in_app_popup(title, message, duration_ms=7000)
+                play_notification_sound()
+                show_browser_notification(title, message)
+            st.session_state['student_last_seen_notification_ts'] = recent[-1][0].isoformat()
+    except Exception:
+        pass
 
 def show_instructor_interface():
     """Render the instructor portal interface"""
