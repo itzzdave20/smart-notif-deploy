@@ -10,6 +10,12 @@ from database import DatabaseManager
 from ai_features import AIFeatures
 from config import NOTIFICATION_API_KEY, NOTIFICATION_ENABLED
 
+# Optional import: streamlit for secrets access (do not hard-require)
+try:
+    import streamlit as st  # type: ignore
+except Exception:
+    st = None
+
 # Load environment variables from .env file
 try:
     from dotenv import load_dotenv
@@ -24,6 +30,7 @@ class NotificationEngine:
         self.ai = AIFeatures()
         self.notification_queue = []
         self.sent_notifications = []
+        self.last_email_error = ""
     
     def _get_all_student_usernames(self) -> List[str]:
         """Read all student usernames from students.json."""
@@ -246,20 +253,21 @@ class NotificationEngine:
     def send_email_notification(self, notification: Dict, student_email: str = None) -> bool:
         """Send notification via email"""
         try:
-            # Get email from environment variables or use defaults
-            smtp_server = os.getenv('SMTP_SERVER', 'smtp.gmail.com')
-            smtp_port = int(os.getenv('SMTP_PORT', '587'))
-            sender_email = os.getenv('EMAIL_USERNAME', '')
-            sender_password = os.getenv('EMAIL_PASSWORD', '')
+            # Resolve SMTP configuration (env first, then Streamlit secrets if available)
+            smtp_server = os.getenv('SMTP_SERVER') or (st.secrets.get('SMTP_SERVER') if st and hasattr(st, 'secrets') else None) or 'smtp.gmail.com'
+            smtp_port = int(os.getenv('SMTP_PORT') or ((st.secrets.get('SMTP_PORT') if st and hasattr(st, 'secrets') else 587)) or 587)
+            sender_email = os.getenv('EMAIL_USERNAME') or (st.secrets.get('EMAIL_USERNAME') if st and hasattr(st, 'secrets') else '')
+            sender_password = os.getenv('EMAIL_PASSWORD') or (st.secrets.get('EMAIL_PASSWORD') if st and hasattr(st, 'secrets') else '')
+            from_name = os.getenv('EMAIL_FROM_NAME') or (st.secrets.get('EMAIL_FROM_NAME') if st and hasattr(st, 'secrets') else 'Smart Notification App')
+            reply_to = os.getenv('EMAIL_REPLY_TO') or (st.secrets.get('EMAIL_REPLY_TO') if st and hasattr(st, 'secrets') else None)
+            use_ssl = (os.getenv('SMTP_USE_SSL') or (st.secrets.get('SMTP_USE_SSL') if st and hasattr(st, 'secrets') else '')).lower() in ['1', 'true', 'yes']
+            timeout_s = int(os.getenv('SMTP_TIMEOUT') or (st.secrets.get('SMTP_TIMEOUT') if st and hasattr(st, 'secrets') else 20) or 20)
             
             # If no email configured, just log it
             if not sender_email or not sender_password:
-                print(f"EMAIL NOTIFICATION (SMTP not configured):")
-                print(f"To: {student_email or 'student'}")
-                print(f"Subject: {notification['title']}")
-                print(f"Message: {notification['message']}")
-                print("-" * 50)
-                return True  # Return True to not block notification creation
+                self.last_email_error = "SMTP not configured: set EMAIL_USERNAME and EMAIL_PASSWORD (and optionally SMTP_SERVER/SMTP_PORT)."
+                print(self.last_email_error)
+                return False
             
             # Get target student email if not provided
             target_email = student_email
@@ -267,14 +275,17 @@ class NotificationEngine:
                 target_email = self.get_student_email(notification['target_student'])
             
             if not target_email:
-                print(f"No email found for notification target")
+                self.last_email_error = "No email found for notification target"
+                print(self.last_email_error)
                 return False
             
             # Create email message
             msg = MIMEMultipart()
-            msg["From"] = sender_email
+            msg["From"] = f"{from_name} <{sender_email}>" if from_name else sender_email
             msg["To"] = target_email
             msg["Subject"] = f"🔔 {notification['title']}"
+            if reply_to:
+                msg.add_header('Reply-To', reply_to)
             
             # Create email body
             email_body = f"""
@@ -293,20 +304,28 @@ Best regards,
 Smart Notification App
             """
             
-            msg.attach(MIMEText(email_body, "plain"))
+            msg.attach(MIMEText(email_body, "plain", "utf-8"))
             
             # Send email
-            server = smtplib.SMTP(smtp_server, smtp_port)
-            server.starttls()
-            server.login(sender_email, sender_password)
-            server.sendmail(sender_email, target_email, msg.as_string())
-            server.quit()
+            if use_ssl or smtp_port == 465:
+                server = smtplib.SMTP_SSL(smtp_server, smtp_port, timeout=timeout_s)
+                server.login(sender_email, sender_password)
+                server.sendmail(sender_email, [target_email], msg.as_string())
+                server.quit()
+            else:
+                server = smtplib.SMTP(smtp_server, smtp_port, timeout=timeout_s)
+                server.ehlo()
+                server.starttls()
+                server.login(sender_email, sender_password)
+                server.sendmail(sender_email, [target_email], msg.as_string())
+                server.quit()
             
             print(f"✅ Email sent successfully to {target_email}")
             return True
             
         except Exception as e:
-            print(f"❌ Error sending email notification: {e}")
+            self.last_email_error = f"Error sending email notification: {e}"
+            print(f"❌ {self.last_email_error}")
             # Don't fail the entire notification if email fails
             return False
     
