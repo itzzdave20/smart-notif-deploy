@@ -451,22 +451,6 @@ def show_instructor_notifications():
                 with col2:
                     require_confirmation = st.checkbox("Require Student Confirmation", help="Students must confirm receipt")
                     send_email_copy = st.checkbox("Send Email Copy", help="Send email copy to instructor")
-                    # Quick diagnostics: send a test email to instructor
-                    if st.button("Send Test Email to Me"):
-                        test_ok = st.session_state.notification_engine.send_email_notification(
-                            {
-                                'title': 'Instructor Email Test',
-                                'message': 'This is a test email from Smart Notification App.',
-                                'notification_type': 'test',
-                                'priority': 1
-                            },
-                            instructor_info.get('email')
-                        )
-                        if test_ok:
-                            st.success(f"✅ Test email sent to {instructor_info.get('email')}")
-                        else:
-                            err = getattr(st.session_state.notification_engine, 'last_email_error', 'Unknown error')
-                            st.error(f"❌ Failed to send test email. {err}")
                 
                 if st.form_submit_button("Send Notification", type="primary"):
                     if title and message:
@@ -523,6 +507,24 @@ def show_instructor_notifications():
                         st.warning("Please provide both title and message")
         else:
             st.info("No classes available to send notifications")
+        
+        # Separate test email control (must not be inside a form)
+        st.markdown("---")
+        if st.button("Send Test Email to Me", key="instructor_test_email_btn"):
+            test_ok = st.session_state.notification_engine.send_email_notification(
+                {
+                    'title': 'Instructor Email Test',
+                    'message': 'This is a test email from Smart Notification App.',
+                    'notification_type': 'test',
+                    'priority': 1
+                },
+                instructor_info.get('email')
+            )
+            if test_ok:
+                st.success(f"✅ Test email sent to {instructor_info.get('email')}")
+            else:
+                err = getattr(st.session_state.notification_engine, 'last_email_error', 'Unknown error')
+                st.error(f"❌ Failed to send test email. {err}")
     
     with tab2:
         st.subheader("Notification History")
