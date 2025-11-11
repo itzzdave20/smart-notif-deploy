@@ -510,21 +510,26 @@ def show_instructor_notifications():
         
         # Separate test email control (must not be inside a form)
         st.markdown("---")
-        if st.button("Send Test Email to Me", key="instructor_test_email_btn"):
-            test_ok = st.session_state.notification_engine.send_email_notification(
-                {
-                    'title': 'Instructor Email Test',
-                    'message': 'This is a test email from Smart Notification App.',
-                    'notification_type': 'test',
-                    'priority': 1
-                },
-                instructor_info.get('email')
-            )
-            if test_ok:
-                st.success(f"✅ Test email sent to {instructor_info.get('email')}")
-            else:
-                err = getattr(st.session_state.notification_engine, 'last_email_error', 'Unknown error')
-                st.error(f"❌ Failed to send test email. {err}")
+        st.subheader("Email Configuration Test")
+        instructor_email = instructor_info.get('email')
+        if not instructor_email:
+            st.warning("⚠️ No email address found in your instructor profile. Please add an email to test email sending.")
+        else:
+            if st.button("Send Test Email to Me", key="instructor_test_email_btn"):
+                test_ok = st.session_state.notification_engine.send_email_notification(
+                    {
+                        'title': 'Instructor Email Test',
+                        'message': 'This is a test email from Smart Notification App. If you received this, email notifications are working correctly!',
+                        'notification_type': 'test',
+                        'priority': 1
+                    },
+                    instructor_email
+                )
+                if test_ok:
+                    st.success(f"✅ Test email sent to {instructor_email}")
+                else:
+                    err = getattr(st.session_state.notification_engine, 'last_email_error', 'Unknown error')
+                    st.error(f"❌ Failed to send test email. {err}")
     
     with tab2:
         st.subheader("Notification History")

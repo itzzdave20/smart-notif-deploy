@@ -254,14 +254,35 @@ class NotificationEngine:
         """Send notification via email"""
         try:
             # Resolve SMTP configuration (env first, then Streamlit secrets if available)
+            try:
+                import streamlit as st
+            except ImportError:
+                st = None
+            
             smtp_server = os.getenv('SMTP_SERVER') or (st.secrets.get('SMTP_SERVER') if st and hasattr(st, 'secrets') else None) or 'smtp.gmail.com'
-            smtp_port = int(os.getenv('SMTP_PORT') or ((st.secrets.get('SMTP_PORT') if st and hasattr(st, 'secrets') else 587)) or 587)
-            sender_email = os.getenv('EMAIL_USERNAME') or (st.secrets.get('EMAIL_USERNAME') if st and hasattr(st, 'secrets') else '')
-            sender_password = os.getenv('EMAIL_PASSWORD') or (st.secrets.get('EMAIL_PASSWORD') if st and hasattr(st, 'secrets') else '')
-            from_name = os.getenv('EMAIL_FROM_NAME') or (st.secrets.get('EMAIL_FROM_NAME') if st and hasattr(st, 'secrets') else 'Smart Notification App')
+            
+            # Safe port handling
+            smtp_port_str = os.getenv('SMTP_PORT') or (st.secrets.get('SMTP_PORT') if st and hasattr(st, 'secrets') else None) or '587'
+            try:
+                smtp_port = int(smtp_port_str)
+            except (ValueError, TypeError):
+                smtp_port = 587
+            
+            sender_email = os.getenv('EMAIL_USERNAME') or (st.secrets.get('EMAIL_USERNAME') if st and hasattr(st, 'secrets') else None) or ''
+            sender_password = os.getenv('EMAIL_PASSWORD') or (st.secrets.get('EMAIL_PASSWORD') if st and hasattr(st, 'secrets') else None) or ''
+            from_name = os.getenv('EMAIL_FROM_NAME') or (st.secrets.get('EMAIL_FROM_NAME') if st and hasattr(st, 'secrets') else None) or 'Smart Notification App'
             reply_to = os.getenv('EMAIL_REPLY_TO') or (st.secrets.get('EMAIL_REPLY_TO') if st and hasattr(st, 'secrets') else None)
-            use_ssl = (os.getenv('SMTP_USE_SSL') or (st.secrets.get('SMTP_USE_SSL') if st and hasattr(st, 'secrets') else '')).lower() in ['1', 'true', 'yes']
-            timeout_s = int(os.getenv('SMTP_TIMEOUT') or (st.secrets.get('SMTP_TIMEOUT') if st and hasattr(st, 'secrets') else 20) or 20)
+            
+            # Safe SSL handling - ensure we have a string before calling .lower()
+            ssl_value = os.getenv('SMTP_USE_SSL') or (st.secrets.get('SMTP_USE_SSL') if st and hasattr(st, 'secrets') else None) or 'false'
+            use_ssl = str(ssl_value).lower() in ['1', 'true', 'yes']
+            
+            # Safe timeout handling
+            timeout_str = os.getenv('SMTP_TIMEOUT') or (st.secrets.get('SMTP_TIMEOUT') if st and hasattr(st, 'secrets') else None) or '20'
+            try:
+                timeout_s = int(timeout_str)
+            except (ValueError, TypeError):
+                timeout_s = 20
             
             # If no email configured, just log it
             if not sender_email or not sender_password:
