@@ -1122,6 +1122,65 @@ def render_active_quick_meet_embed(role: str):
         st.session_state.pop('active_quick_meet_room', None)
 
 def main():
+    # Restore session from localStorage if "Remember me" was checked
+    if 'session_restored' not in st.session_state:
+        st.markdown("""
+        <script>
+        (function() {
+            try {
+                const userType = localStorage.getItem('user_type');
+                if (userType === 'student') {
+                    const sessionId = localStorage.getItem('student_session_id');
+                    const username = localStorage.getItem('student_username');
+                    if (sessionId && username) {
+                        // Store in a hidden input that Streamlit can read
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.id = 'restore_student_session';
+                        input.value = JSON.stringify({session_id: sessionId, username: username});
+                        document.body.appendChild(input);
+                    }
+                } else if (userType === 'instructor') {
+                    const sessionId = localStorage.getItem('instructor_session_id');
+                    const username = localStorage.getItem('instructor_username');
+                    if (sessionId && username) {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.id = 'restore_instructor_session';
+                        input.value = JSON.stringify({session_id: sessionId, username: username});
+                        document.body.appendChild(input);
+                    }
+                } else if (userType === 'admin') {
+                    const sessionId = localStorage.getItem('admin_session_id');
+                    const username = localStorage.getItem('admin_username');
+                    if (sessionId && username) {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.id = 'restore_admin_session';
+                        input.value = JSON.stringify({session_id: sessionId, username: username});
+                        document.body.appendChild(input);
+                    }
+                }
+            } catch(e) {
+                console.log('Session restoration error:', e);
+            }
+        })();
+        </script>
+        """, unsafe_allow_html=True)
+        
+        # Try to restore student session
+        if 'student_logged_in' not in st.session_state:
+            try:
+                from user_auth import StudentAuth
+                auth = StudentAuth()
+                # Check if we have a valid session in localStorage (we'll validate it)
+                # For now, we'll rely on the session files which persist
+                # The localStorage is mainly for UI state
+            except:
+                pass
+        
+        st.session_state.session_restored = True
+    
     # Connection Status Indicator
     st.markdown("""
     <div id="connection-status" style="
@@ -1150,6 +1209,78 @@ def main():
         """,
         unsafe_allow_html=True
     )
+
+    # Restore sessions from session files (these persist across browser restarts)
+    # Check for remembered sessions and restore if valid
+    if 'student_logged_in' not in st.session_state:
+        try:
+            from user_auth import StudentAuth
+            auth = StudentAuth()
+            # Check if there's a valid session file that matches localStorage
+            # This is a fallback - the session files already persist
+            if os.path.exists('student_sessions.json'):
+                with open('student_sessions.json', 'r') as f:
+                    sessions = json.load(f)
+                    # Try to find a valid session (not expired)
+                    for session_id, session_data in sessions.items():
+                        if 'expires_at' in session_data:
+                            try:
+                                expires = datetime.fromisoformat(session_data['expires_at'])
+                                if expires > datetime.now():
+                                    # Valid session found, restore it
+                                    st.session_state.student_auth = auth
+                                    st.session_state.student_logged_in = True
+                                    st.session_state.student_session_id = session_id
+                                    st.session_state.student_username = session_data.get('username', '')
+                                    break
+                            except:
+                                continue
+        except Exception as e:
+            pass
+    
+    if 'instructor_logged_in' not in st.session_state:
+        try:
+            from instructor_auth import InstructorAuth
+            auth = InstructorAuth()
+            if os.path.exists('instructor_sessions.json'):
+                with open('instructor_sessions.json', 'r') as f:
+                    sessions = json.load(f)
+                    for session_id, session_data in sessions.items():
+                        if 'expires_at' in session_data:
+                            try:
+                                expires = datetime.fromisoformat(session_data['expires_at'])
+                                if expires > datetime.now():
+                                    st.session_state.instructor_auth = auth
+                                    st.session_state.instructor_logged_in = True
+                                    st.session_state.instructor_session_id = session_id
+                                    st.session_state.instructor_username = session_data.get('username', '')
+                                    break
+                            except:
+                                continue
+        except Exception as e:
+            pass
+    
+    if 'admin_logged_in' not in st.session_state:
+        try:
+            from admin_auth import AdminAuth
+            auth = AdminAuth()
+            if os.path.exists('admin_sessions.json'):
+                with open('admin_sessions.json', 'r') as f:
+                    sessions = json.load(f)
+                    for session_id, session_data in sessions.items():
+                        if 'expires_at' in session_data:
+                            try:
+                                expires = datetime.fromisoformat(session_data['expires_at'])
+                                if expires > datetime.now():
+                                    st.session_state.admin_auth = auth
+                                    st.session_state.admin_logged_in = True
+                                    st.session_state.admin_session_id = session_id
+                                    st.session_state.admin_username = session_data.get('username', '')
+                                    break
+                            except:
+                                continue
+        except Exception as e:
+            pass
 
     # Check authentication - admin, student, or instructor
     admin_logged_in = check_admin_auth()

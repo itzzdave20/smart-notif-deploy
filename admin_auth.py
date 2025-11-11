@@ -83,7 +83,7 @@ class AdminAuth:
         self.save_admin_users()
         return True, "Admin user created successfully"
     
-    def authenticate(self, username, password):
+    def authenticate(self, username, password, remember_me=False):
         """Authenticate admin user"""
         if username not in self.admin_users:
             return False, "Invalid username or password"
@@ -98,12 +98,15 @@ class AdminAuth:
         
         # Create session
         session_id = secrets.token_urlsafe(32)
+        # If remember_me, extend session to 30 days, otherwise 24 hours
+        expiration = timedelta(days=30) if remember_me else timedelta(hours=24)
         self.sessions[session_id] = {
             "username": username,
             "role": user["role"],
             "permissions": user["permissions"],
             "created_at": datetime.now().isoformat(),
-            "expires_at": (datetime.now() + timedelta(hours=24)).isoformat()
+            "expires_at": (datetime.now() + expiration).isoformat(),
+            "remember_me": remember_me
         }
         self.save_sessions()
         
@@ -221,12 +224,24 @@ def show_admin_login():
         if login_button:
             if username and password:
                 auth = AdminAuth()
-                success, result = auth.authenticate(username, password)
+                success, result = auth.authenticate(username, password, remember_me=remember_me)
                 
                 if success:
                     st.session_state.admin_logged_in = True
                     st.session_state.admin_session_id = result
                     st.session_state.admin_username = username
+                    
+                    # Save to localStorage if "Remember me" is checked
+                    if remember_me:
+                        st.markdown(f"""
+                        <script>
+                        localStorage.setItem('admin_session_id', '{result}');
+                        localStorage.setItem('admin_username', '{username}');
+                        localStorage.setItem('admin_remember_me', 'true');
+                        localStorage.setItem('user_type', 'admin');
+                        </script>
+                        """, unsafe_allow_html=True)
+                    
                     st.success("✅ Login successful!")
                     st.rerun()
                 else:
@@ -247,6 +262,16 @@ def show_admin_logout():
         for key in ['admin_logged_in', 'admin_session_id', 'admin_username']:
             if key in st.session_state:
                 del st.session_state[key]
+        
+        # Clear localStorage
+        st.markdown("""
+        <script>
+        localStorage.removeItem('admin_session_id');
+        localStorage.removeItem('admin_username');
+        localStorage.removeItem('admin_remember_me');
+        localStorage.removeItem('user_type');
+        </script>
+        """, unsafe_allow_html=True)
         
         st.success("✅ Logged out successfully!")
         st.rerun()

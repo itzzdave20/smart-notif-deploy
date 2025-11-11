@@ -106,7 +106,7 @@ class StudentAuth:
         self.save_students()
         return True, "Student registered successfully"
     
-    def authenticate_student(self, username, password):
+    def authenticate_student(self, username, password, remember_me=False):
         """Authenticate student"""
         if username not in self.students:
             return False, "Invalid username or password"
@@ -119,14 +119,17 @@ class StudentAuth:
         student["last_login"] = datetime.now().isoformat()
         self.save_students()
         
-        # Create session
+        # Create session with longer expiration if "remember me" is checked
         session_id = secrets.token_urlsafe(32)
+        # If remember_me, extend session to 30 days, otherwise 8 hours
+        expiration = timedelta(days=30) if remember_me else timedelta(hours=8)
         self.student_sessions[session_id] = {
             "username": username,
             "role": student["role"],
             "permissions": student["permissions"],
             "created_at": datetime.now().isoformat(),
-            "expires_at": (datetime.now() + timedelta(hours=8)).isoformat()  # 8 hour session
+            "expires_at": (datetime.now() + expiration).isoformat(),
+            "remember_me": remember_me
         }
         self.save_student_sessions()
         
@@ -321,7 +324,7 @@ def show_student_login():
             if login_button:
                 if username and password:
                     auth = StudentAuth()
-                    success, result = auth.authenticate_student(username, password)
+                    success, result = auth.authenticate_student(username, password, remember_me=remember_me)
                     
                     if success:
                         # Use the same auth instance that created the session
@@ -329,6 +332,18 @@ def show_student_login():
                         st.session_state.student_logged_in = True
                         st.session_state.student_session_id = result
                         st.session_state.student_username = username
+                        
+                        # Save to localStorage if "Remember me" is checked
+                        if remember_me:
+                            st.markdown(f"""
+                            <script>
+                            localStorage.setItem('student_session_id', '{result}');
+                            localStorage.setItem('student_username', '{username}');
+                            localStorage.setItem('student_remember_me', 'true');
+                            localStorage.setItem('user_type', 'student');
+                            </script>
+                            """, unsafe_allow_html=True)
+                        
                         # AI-powered welcome notification
                         try:
                             if 'notification_engine' in st.session_state:
@@ -397,6 +412,16 @@ def show_student_logout():
         for key in ['student_logged_in', 'student_session_id', 'student_username']:
             if key in st.session_state:
                 del st.session_state[key]
+        
+        # Clear localStorage
+        st.markdown("""
+        <script>
+        localStorage.removeItem('student_session_id');
+        localStorage.removeItem('student_username');
+        localStorage.removeItem('student_remember_me');
+        localStorage.removeItem('user_type');
+        </script>
+        """, unsafe_allow_html=True)
         
         st.success("✅ Logged out successfully!")
         st.rerun()

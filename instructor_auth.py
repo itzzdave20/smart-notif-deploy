@@ -145,7 +145,7 @@ class InstructorAuth:
         self.save_instructors()
         return True, "Instructor registered successfully"
     
-    def authenticate_instructor(self, username, password):
+    def authenticate_instructor(self, username, password, remember_me=False):
         """Authenticate instructor"""
         if username not in self.instructors:
             return False, "Invalid username or password"
@@ -158,14 +158,17 @@ class InstructorAuth:
         instructor["last_login"] = datetime.now().isoformat()
         self.save_instructors()
         
-        # Create session
+        # Create session with longer expiration if "remember me" is checked
         session_id = secrets.token_urlsafe(32)
+        # If remember_me, extend session to 30 days, otherwise 12 hours
+        expiration = timedelta(days=30) if remember_me else timedelta(hours=12)
         self.instructor_sessions[session_id] = {
             "username": username,
             "role": instructor["role"],
             "permissions": instructor["permissions"],
             "created_at": datetime.now().isoformat(),
-            "expires_at": (datetime.now() + timedelta(hours=12)).isoformat()  # 12 hour session
+            "expires_at": (datetime.now() + expiration).isoformat(),
+            "remember_me": remember_me
         }
         self.save_instructor_sessions()
         
@@ -467,12 +470,24 @@ def show_instructor_login():
             if login_button:
                 if username and password:
                     auth = InstructorAuth()
-                    success, result = auth.authenticate_instructor(username, password)
+                    success, result = auth.authenticate_instructor(username, password, remember_me=remember_me)
                     
                     if success:
                         st.session_state.instructor_logged_in = True
                         st.session_state.instructor_session_id = result
                         st.session_state.instructor_username = username
+                        
+                        # Save to localStorage if "Remember me" is checked
+                        if remember_me:
+                            st.markdown(f"""
+                            <script>
+                            localStorage.setItem('instructor_session_id', '{result}');
+                            localStorage.setItem('instructor_username', '{username}');
+                            localStorage.setItem('instructor_remember_me', 'true');
+                            localStorage.setItem('user_type', 'instructor');
+                            </script>
+                            """, unsafe_allow_html=True)
+                        
                         st.success("✅ Login successful!")
                         st.rerun()
                     else:
@@ -530,6 +545,16 @@ def show_instructor_logout():
         for key in ['instructor_logged_in', 'instructor_session_id', 'instructor_username']:
             if key in st.session_state:
                 del st.session_state[key]
+        
+        # Clear localStorage
+        st.markdown("""
+        <script>
+        localStorage.removeItem('instructor_session_id');
+        localStorage.removeItem('instructor_username');
+        localStorage.removeItem('instructor_remember_me');
+        localStorage.removeItem('user_type');
+        </script>
+        """, unsafe_allow_html=True)
         
         st.success("✅ Logged out successfully!")
         st.rerun()
