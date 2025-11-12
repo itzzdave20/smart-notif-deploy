@@ -27,7 +27,7 @@ from ai_features import AIFeatures
 from database import DatabaseManager
 from config import STREAMLIT_THEME
 from admin_auth import AdminAuth, show_admin_login, show_admin_logout, check_admin_auth, require_admin_auth, show_admin_dashboard, show_user_management, show_system_settings, show_system_logs
-from user_auth import StudentAuth, show_student_login, show_student_logout, check_student_auth, require_student_auth, show_student_profile, show_student_dashboard, show_student_attendance, show_student_reports, show_student_classes
+from user_auth import StudentAuth, show_student_login, show_student_logout, check_student_auth, require_student_auth, show_student_profile, show_student_dashboard, show_student_attendance, show_student_reports, show_student_classes, show_student_notifications
 from ai_chatbot_ui import show_ai_chatbot
 from smart_scheduling_ui import show_smart_scheduling
 from instructor_auth import InstructorAuth, show_instructor_login, show_instructor_logout, check_instructor_auth, require_instructor_auth, show_instructor_dashboard, show_instructor_profile
@@ -895,6 +895,7 @@ def show_student_interface():
     student_pages = {
         "Dashboard": ("dashboard", show_student_dashboard),
         "Classes": ("classes", show_student_classes),
+        "Notifications": ("notifications", show_student_notifications),
         "AI Chatbot": ("ai_chatbot", lambda: show_ai_chatbot("student")),
         "Attendance": ("attendance", show_student_attendance),
         "Reports": ("reports", show_student_reports),
@@ -926,32 +927,77 @@ def show_student_interface():
         db = st.session_state.db
         username = student_info['username']
         last_seen = st.session_state.get('student_last_seen_notification_ts')
-        notifications = db.get_notifications(limit=50)
+        notifications = db.get_notifications(limit=100)  # Get more notifications to check
         recent = []
+        
         for n in notifications or []:
-            # Targeted to this student or general broadcast (no target_student field)
-            if n.get('target_student') and n.get('target_student') != username:
-                continue
+            # Check if notification is for this student
+            target_student = n.get('target_student')
+            
+            # Include notification if:
+            # 1. It's targeted to this student (target_student == username)
+            # 2. It's a general/broadcast notification (target_student is None or empty)
+            is_for_student = (
+                target_student is None or 
+                target_student == '' or 
+                target_student == username
+            )
+            
+            if not is_for_student:
+                continue  # Skip notifications targeted to other students
+            
+            # Get creation timestamp
             created_at = n.get('created_at') or n.get('timestamp') or ""
-            # Accept both isoformat and plain
             try:
-                created_dt = datetime.fromisoformat(created_at) if created_at else datetime.now()
+                if isinstance(created_at, str):
+                    created_dt = datetime.fromisoformat(created_at.replace('Z', '+00:00') if 'Z' in created_at else created_at)
+                else:
+                    created_dt = created_at
             except Exception:
+                # If parsing fails, use current time (will show as new)
                 created_dt = datetime.now()
-            if last_seen is None or created_dt.isoformat() > last_seen:
-                recent.append((created_dt, n))
+            
+            # Check if this is a new notification (not seen before)
+            if last_seen is None:
+                # First time - show all recent notifications (last 24 hours)
+                if (datetime.now() - created_dt).total_seconds() < 86400:  # 24 hours
+                    recent.append((created_dt, n))
+            else:
+                # Compare timestamps
+                try:
+                    last_seen_dt = datetime.fromisoformat(last_seen.replace('Z', '+00:00') if 'Z' in last_seen else last_seen)
+                    if created_dt > last_seen_dt:
+                        recent.append((created_dt, n))
+                except Exception:
+                    # If last_seen parsing fails, show this notification
+                    recent.append((created_dt, n))
+        
+        # Show new notifications as popups
         if recent:
-            recent.sort(key=lambda x: x[0])
-            # Show up to 3 most recent as popups
-            for _, n in recent[-3:]:
+            recent.sort(key=lambda x: x[0])  # Sort by timestamp
+            # Show up to 5 most recent as popups
+            for _, n in recent[-5:]:
                 title = n.get('title', 'Notification')
                 message = n.get('message', '')
-                show_in_app_popup(title, message, duration_ms=7000)
+                
+                # Show in-app popup
+                show_in_app_popup(title, message, duration_ms=8000)
+                
+                # Play sound
                 play_notification_sound()
+                
+                # Show browser notification
                 show_browser_notification(title, message)
-            st.session_state['student_last_seen_notification_ts'] = recent[-1][0].isoformat()
-    except Exception:
-        pass
+            
+            # Update last seen timestamp to the most recent notification
+            if recent:
+                st.session_state['student_last_seen_notification_ts'] = recent[-1][0].isoformat()
+                
+    except Exception as e:
+        # Log error but don't break the interface
+        import traceback
+        print(f"Error checking notifications: {e}")
+        traceback.print_exc()
 
 def show_instructor_interface():
     """Render the instructor portal interface"""

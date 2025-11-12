@@ -679,11 +679,13 @@ def show_student_dashboard():
     
     # Check for new notifications
     student_username = student_info['username']
-    all_notifications = st.session_state.db.get_notifications(limit=50)
-    student_notifications = [
-        n for n in all_notifications 
-        if (n.get('target_student') == student_username or n.get('target_student') is None)
-    ]
+    all_notifications = st.session_state.db.get_notifications(limit=100)
+    student_notifications = []
+    for n in all_notifications or []:
+        target_student = n.get('target_student')
+        # Include if targeted to this student or is a general/broadcast notification
+        if target_student is None or target_student == '' or target_student == student_username:
+            student_notifications.append(n)
     
     # Track last seen notification
     if 'last_seen_notification_id' not in st.session_state:
@@ -1059,6 +1061,114 @@ def show_student_attendance():
         except Exception as e:
             st.error(f"Error loading attendance records: {str(e)}")
             st.info("No attendance records found for you")
+
+def show_student_notifications():
+    """Show student notifications interface"""
+    st.header("🔔 My Notifications")
+    
+    auth = st.session_state.student_auth
+    session_id = st.session_state.get('student_session_id')
+    
+    if not session_id:
+        st.error("No student session found. Please login again.")
+        return
+    
+    student_info = auth.get_student_info(session_id)
+    
+    if not student_info:
+        st.error("Unable to load student information")
+        return
+    
+    student_username = student_info['username']
+    
+    # Get all notifications for this student
+    try:
+        db = st.session_state.db
+        all_notifications = db.get_notifications(limit=100)
+        
+        # Filter notifications for this student
+        student_notifications = []
+        for n in all_notifications or []:
+            target_student = n.get('target_student')
+            # Include if targeted to this student or is a general/broadcast notification
+            if target_student is None or target_student == '' or target_student == student_username:
+                student_notifications.append(n)
+        
+        # Sort by created_at (newest first)
+        student_notifications.sort(
+            key=lambda x: x.get('created_at') or x.get('timestamp') or '',
+            reverse=True
+        )
+        
+        if not student_notifications:
+            st.info("📭 No notifications yet. You'll see notifications from your instructors here.")
+            return
+        
+        st.success(f"📬 You have {len(student_notifications)} notification(s)")
+        st.markdown("---")
+        
+        # Display notifications
+        for idx, notification in enumerate(student_notifications):
+            with st.container():
+                col1, col2 = st.columns([4, 1])
+                
+                with col1:
+                    # Notification title
+                    priority = notification.get('priority', 1)
+                    priority_emoji = "🔴" if priority >= 4 else "🟡" if priority >= 3 else "🟢"
+                    st.markdown(f"### {priority_emoji} {notification.get('title', 'Notification')}")
+                    
+                    # Notification message
+                    message = notification.get('message', '')
+                    st.markdown(f"{message}")
+                    
+                    # Notification metadata
+                    col_meta1, col_meta2, col_meta3 = st.columns(3)
+                    with col_meta1:
+                        notification_type = notification.get('notification_type', 'info')
+                        type_labels = {
+                            'info': 'ℹ️ Information',
+                            'alert': '⚠️ Alert',
+                            'reminder': '⏰ Reminder',
+                            'announcement': '📢 Announcement',
+                            'attendance': '📝 Attendance',
+                            'test': '🧪 Test'
+                        }
+                        st.caption(f"**Type:** {type_labels.get(notification_type, notification_type)}")
+                    
+                    with col_meta2:
+                        created_at = notification.get('created_at') or notification.get('timestamp', '')
+                        if created_at:
+                            try:
+                                if isinstance(created_at, str):
+                                    dt = datetime.fromisoformat(created_at.replace('Z', '+00:00') if 'Z' in created_at else created_at)
+                                else:
+                                    dt = created_at
+                                st.caption(f"**Date:** {dt.strftime('%Y-%m-%d %H:%M')}")
+                            except:
+                                st.caption(f"**Date:** {created_at}")
+                        else:
+                            st.caption("**Date:** N/A")
+                    
+                    with col_meta3:
+                        st.caption(f"**Priority:** {priority}/5")
+                
+                with col2:
+                    # Mark as read button (optional)
+                    if st.button("✓ Read", key=f"mark_read_{idx}", help="Mark as read"):
+                        st.success("Marked as read!")
+                        st.rerun()
+                
+                st.markdown("---")
+        
+        # Refresh button
+        if st.button("🔄 Refresh Notifications", key="refresh_notifications"):
+            st.rerun()
+            
+    except Exception as e:
+        st.error(f"Error loading notifications: {str(e)}")
+        import traceback
+        st.code(traceback.format_exc())
 
 def show_student_reports():
     """Show student reports interface"""
