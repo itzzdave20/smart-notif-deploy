@@ -1122,65 +1122,6 @@ def render_active_quick_meet_embed(role: str):
         st.session_state.pop('active_quick_meet_room', None)
 
 def main():
-    # Restore session from localStorage if "Remember me" was checked
-    if 'session_restored' not in st.session_state:
-        st.markdown("""
-        <script>
-        (function() {
-            try {
-                const userType = localStorage.getItem('user_type');
-                if (userType === 'student') {
-                    const sessionId = localStorage.getItem('student_session_id');
-                    const username = localStorage.getItem('student_username');
-                    if (sessionId && username) {
-                        // Store in a hidden input that Streamlit can read
-                        const input = document.createElement('input');
-                        input.type = 'hidden';
-                        input.id = 'restore_student_session';
-                        input.value = JSON.stringify({session_id: sessionId, username: username});
-                        document.body.appendChild(input);
-                    }
-                } else if (userType === 'instructor') {
-                    const sessionId = localStorage.getItem('instructor_session_id');
-                    const username = localStorage.getItem('instructor_username');
-                    if (sessionId && username) {
-                        const input = document.createElement('input');
-                        input.type = 'hidden';
-                        input.id = 'restore_instructor_session';
-                        input.value = JSON.stringify({session_id: sessionId, username: username});
-                        document.body.appendChild(input);
-                    }
-                } else if (userType === 'admin') {
-                    const sessionId = localStorage.getItem('admin_session_id');
-                    const username = localStorage.getItem('admin_username');
-                    if (sessionId && username) {
-                        const input = document.createElement('input');
-                        input.type = 'hidden';
-                        input.id = 'restore_admin_session';
-                        input.value = JSON.stringify({session_id: sessionId, username: username});
-                        document.body.appendChild(input);
-                    }
-                }
-            } catch(e) {
-                console.log('Session restoration error:', e);
-            }
-        })();
-        </script>
-        """, unsafe_allow_html=True)
-        
-        # Try to restore student session
-        if 'student_logged_in' not in st.session_state:
-            try:
-                from user_auth import StudentAuth
-                auth = StudentAuth()
-                # Check if we have a valid session in localStorage (we'll validate it)
-                # For now, we'll rely on the session files which persist
-                # The localStorage is mainly for UI state
-            except:
-                pass
-        
-        st.session_state.session_restored = True
-    
     # Connection Status Indicator
     st.markdown("""
     <div id="connection-status" style="
@@ -1210,77 +1151,140 @@ def main():
         unsafe_allow_html=True
     )
 
-    # Restore sessions from session files (these persist across browser restarts)
-    # Check for remembered sessions and restore if valid
-    if 'student_logged_in' not in st.session_state:
-        try:
-            from user_auth import StudentAuth
-            auth = StudentAuth()
-            # Check if there's a valid session file that matches localStorage
-            # This is a fallback - the session files already persist
-            if os.path.exists('student_sessions.json'):
-                with open('student_sessions.json', 'r') as f:
-                    sessions = json.load(f)
-                    # Try to find a valid session (not expired)
-                    for session_id, session_data in sessions.items():
-                        if 'expires_at' in session_data:
-                            try:
-                                expires = datetime.fromisoformat(session_data['expires_at'])
-                                if expires > datetime.now():
-                                    # Valid session found, restore it
-                                    st.session_state.student_auth = auth
-                                    st.session_state.student_logged_in = True
-                                    st.session_state.student_session_id = session_id
-                                    st.session_state.student_username = session_data.get('username', '')
-                                    break
-                            except:
-                                continue
-        except Exception as e:
-            pass
-    
-    if 'instructor_logged_in' not in st.session_state:
-        try:
-            from instructor_auth import InstructorAuth
-            auth = InstructorAuth()
-            if os.path.exists('instructor_sessions.json'):
-                with open('instructor_sessions.json', 'r') as f:
-                    sessions = json.load(f)
-                    for session_id, session_data in sessions.items():
-                        if 'expires_at' in session_data:
-                            try:
-                                expires = datetime.fromisoformat(session_data['expires_at'])
-                                if expires > datetime.now():
-                                    st.session_state.instructor_auth = auth
-                                    st.session_state.instructor_logged_in = True
-                                    st.session_state.instructor_session_id = session_id
-                                    st.session_state.instructor_username = session_data.get('username', '')
-                                    break
-                            except:
-                                continue
-        except Exception as e:
-            pass
-    
-    if 'admin_logged_in' not in st.session_state:
-        try:
-            from admin_auth import AdminAuth
-            auth = AdminAuth()
-            if os.path.exists('admin_sessions.json'):
-                with open('admin_sessions.json', 'r') as f:
-                    sessions = json.load(f)
-                    for session_id, session_data in sessions.items():
-                        if 'expires_at' in session_data:
-                            try:
-                                expires = datetime.fromisoformat(session_data['expires_at'])
-                                if expires > datetime.now():
-                                    st.session_state.admin_auth = auth
-                                    st.session_state.admin_logged_in = True
-                                    st.session_state.admin_session_id = session_id
-                                    st.session_state.admin_username = session_data.get('username', '')
-                                    break
-                            except:
-                                continue
-        except Exception as e:
-            pass
+    # Restore sessions ONLY if they match the current browser's localStorage
+    # This prevents one user's session from being restored for another user
+    # Each browser only restores its own session based on localStorage
+    if 'session_restore_attempted' not in st.session_state:
+        st.session_state.session_restore_attempted = True
+        
+        # Use query parameters to pass session_id from localStorage to Python
+        # JavaScript will set these on first load, then we restore only that specific session
+        query_params = st.query_params
+        
+        # Try to restore student session - ONLY if it matches localStorage
+        if 'student_logged_in' not in st.session_state:
+            stored_session_id = query_params.get('restore_student_session', None)
+            if stored_session_id:
+                try:
+                    from user_auth import StudentAuth
+                    auth = StudentAuth()
+                    # Verify the session exists and is valid
+                    is_valid, session_data = auth.verify_student_session(stored_session_id)
+                    if is_valid and session_data:
+                        # Double-check: verify the username matches what's in localStorage
+                        # This ensures we're restoring the correct user's session
+                        st.session_state.student_auth = auth
+                        st.session_state.student_logged_in = True
+                        st.session_state.student_session_id = stored_session_id
+                        st.session_state.student_username = session_data.get('username', '')
+                except Exception as e:
+                    # Session invalid or expired, clear localStorage
+                    st.markdown("""
+                    <script>
+                    localStorage.removeItem('student_session_id');
+                    localStorage.removeItem('student_username');
+                    localStorage.removeItem('student_remember_me');
+                    localStorage.removeItem('user_type');
+                    </script>
+                    """, unsafe_allow_html=True)
+        
+        # Try to restore instructor session - ONLY if it matches localStorage
+        if 'instructor_logged_in' not in st.session_state:
+            stored_session_id = query_params.get('restore_instructor_session', None)
+            if stored_session_id:
+                try:
+                    from instructor_auth import InstructorAuth
+                    auth = InstructorAuth()
+                    is_valid, session_data = auth.verify_instructor_session(stored_session_id)
+                    if is_valid and session_data:
+                        st.session_state.instructor_auth = auth
+                        st.session_state.instructor_logged_in = True
+                        st.session_state.instructor_session_id = stored_session_id
+                        st.session_state.instructor_username = session_data.get('username', '')
+                except Exception as e:
+                    # Session invalid or expired, clear localStorage
+                    st.markdown("""
+                    <script>
+                    localStorage.removeItem('instructor_session_id');
+                    localStorage.removeItem('instructor_username');
+                    localStorage.removeItem('instructor_remember_me');
+                    localStorage.removeItem('user_type');
+                    </script>
+                    """, unsafe_allow_html=True)
+        
+        # Try to restore admin session - ONLY if it matches localStorage
+        if 'admin_logged_in' not in st.session_state:
+            stored_session_id = query_params.get('restore_admin_session', None)
+            if stored_session_id:
+                try:
+                    from admin_auth import AdminAuth
+                    auth = AdminAuth()
+                    is_valid, session_data = auth.verify_session(stored_session_id)
+                    if is_valid and session_data:
+                        st.session_state.admin_auth = auth
+                        st.session_state.admin_logged_in = True
+                        st.session_state.admin_session_id = stored_session_id
+                        st.session_state.admin_username = session_data.get('username', '')
+                except Exception as e:
+                    # Session invalid or expired, clear localStorage
+                    st.markdown("""
+                    <script>
+                    localStorage.removeItem('admin_session_id');
+                    localStorage.removeItem('admin_username');
+                    localStorage.removeItem('admin_remember_me');
+                    localStorage.removeItem('user_type');
+                    </script>
+                    """, unsafe_allow_html=True)
+        
+        # JavaScript: Read localStorage and set query params (one-time, only if not already set)
+        # This ensures each browser only restores its own session
+        if not query_params.get('restore_student_session') and not query_params.get('restore_instructor_session') and not query_params.get('restore_admin_session'):
+            # Check if we've already attempted restore (prevent infinite loops)
+            if not st.session_state.get('session_restore_js_executed'):
+                st.session_state.session_restore_js_executed = True
+                restore_script = """
+                <script>
+                (function() {
+                    try {
+                        // Check if we've already set the param (prevent loops)
+                        const urlParams = new URLSearchParams(window.location.search);
+                        if (urlParams.has('restore_student_session') || 
+                            urlParams.has('restore_instructor_session') || 
+                            urlParams.has('restore_admin_session')) {
+                            return; // Already processed
+                        }
+                        
+                        const userType = localStorage.getItem('user_type');
+                        if (!userType) return;
+                        
+                        let sessionId = null;
+                        let paramName = null;
+                        
+                        if (userType === 'student') {
+                            sessionId = localStorage.getItem('student_session_id');
+                            paramName = 'restore_student_session';
+                        } else if (userType === 'instructor') {
+                            sessionId = localStorage.getItem('instructor_session_id');
+                            paramName = 'restore_instructor_session';
+                        } else if (userType === 'admin') {
+                            sessionId = localStorage.getItem('admin_session_id');
+                            paramName = 'restore_admin_session';
+                        }
+                        
+                        if (sessionId && paramName) {
+                            urlParams.set(paramName, sessionId);
+                            const newUrl = window.location.pathname + '?' + urlParams.toString();
+                            window.history.replaceState({}, '', newUrl);
+                            // Use st.rerun equivalent - just reload once
+                            setTimeout(() => window.location.reload(), 100);
+                        }
+                    } catch(e) {
+                        console.log('Session restore error:', e);
+                    }
+                })();
+                </script>
+                """
+                st.markdown(restore_script, unsafe_allow_html=True)
 
     # Check authentication - admin, student, or instructor
     admin_logged_in = check_admin_auth()
