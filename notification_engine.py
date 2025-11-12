@@ -254,39 +254,102 @@ class NotificationEngine:
         """Send notification via email"""
         try:
             # Resolve SMTP configuration (env first, then Streamlit secrets if available)
+            # Try to get from Streamlit secrets
+            sender_email = None
+            sender_password = None
+            smtp_server = None
+            smtp_port_str = None
+            from_name = None
+            reply_to = None
+            ssl_value = None
+            timeout_str = None
+            
             try:
                 import streamlit as st
+                if hasattr(st, 'secrets') and st.secrets:
+                    try:
+                        # Access secrets using dictionary-style access (more reliable)
+                        if 'EMAIL_USERNAME' in st.secrets:
+                            sender_email = str(st.secrets['EMAIL_USERNAME'])
+                        if 'EMAIL_PASSWORD' in st.secrets:
+                            sender_password = str(st.secrets['EMAIL_PASSWORD'])
+                        if 'SMTP_SERVER' in st.secrets:
+                            smtp_server = str(st.secrets['SMTP_SERVER'])
+                        if 'SMTP_PORT' in st.secrets:
+                            smtp_port_str = str(st.secrets['SMTP_PORT'])
+                        if 'EMAIL_FROM_NAME' in st.secrets:
+                            from_name = str(st.secrets['EMAIL_FROM_NAME'])
+                        if 'EMAIL_REPLY_TO' in st.secrets:
+                            reply_to = str(st.secrets['EMAIL_REPLY_TO']) if st.secrets['EMAIL_REPLY_TO'] else None
+                        if 'SMTP_USE_SSL' in st.secrets:
+                            ssl_value = str(st.secrets['SMTP_USE_SSL'])
+                        if 'SMTP_TIMEOUT' in st.secrets:
+                            timeout_str = str(st.secrets['SMTP_TIMEOUT'])
+                    except Exception as e:
+                        print(f"Error reading Streamlit secrets: {e}")
+                        import traceback
+                        traceback.print_exc()
             except ImportError:
-                st = None
+                pass
+            except Exception as e:
+                print(f"Error accessing Streamlit: {e}")
             
-            smtp_server = os.getenv('SMTP_SERVER') or (st.secrets.get('SMTP_SERVER') if st and hasattr(st, 'secrets') else None) or 'smtp.gmail.com'
+            # Fallback to environment variables if secrets not available
+            # Also handle empty strings (strip whitespace)
+            sender_email = (sender_email or os.getenv('EMAIL_USERNAME', '')).strip()
+            sender_password = (sender_password or os.getenv('EMAIL_PASSWORD', '')).strip()
+            smtp_server = (smtp_server or os.getenv('SMTP_SERVER', 'smtp.gmail.com')).strip()
+            smtp_port_str = (smtp_port_str or os.getenv('SMTP_PORT', '587')).strip()
+            from_name = (from_name or os.getenv('EMAIL_FROM_NAME', 'Smart Notification App')).strip()
+            reply_to = (reply_to or os.getenv('EMAIL_REPLY_TO', None))
+            if reply_to:
+                reply_to = reply_to.strip()
+            ssl_value = (ssl_value or os.getenv('SMTP_USE_SSL', 'false')).strip()
+            timeout_str = (timeout_str or os.getenv('SMTP_TIMEOUT', '20')).strip()
             
             # Safe port handling
-            smtp_port_str = os.getenv('SMTP_PORT') or (st.secrets.get('SMTP_PORT') if st and hasattr(st, 'secrets') else None) or '587'
             try:
                 smtp_port = int(smtp_port_str)
             except (ValueError, TypeError):
                 smtp_port = 587
             
-            sender_email = os.getenv('EMAIL_USERNAME') or (st.secrets.get('EMAIL_USERNAME') if st and hasattr(st, 'secrets') else None) or ''
-            sender_password = os.getenv('EMAIL_PASSWORD') or (st.secrets.get('EMAIL_PASSWORD') if st and hasattr(st, 'secrets') else None) or ''
-            from_name = os.getenv('EMAIL_FROM_NAME') or (st.secrets.get('EMAIL_FROM_NAME') if st and hasattr(st, 'secrets') else None) or 'Smart Notification App'
-            reply_to = os.getenv('EMAIL_REPLY_TO') or (st.secrets.get('EMAIL_REPLY_TO') if st and hasattr(st, 'secrets') else None)
-            
             # Safe SSL handling - ensure we have a string before calling .lower()
-            ssl_value = os.getenv('SMTP_USE_SSL') or (st.secrets.get('SMTP_USE_SSL') if st and hasattr(st, 'secrets') else None) or 'false'
             use_ssl = str(ssl_value).lower() in ['1', 'true', 'yes']
             
             # Safe timeout handling
-            timeout_str = os.getenv('SMTP_TIMEOUT') or (st.secrets.get('SMTP_TIMEOUT') if st and hasattr(st, 'secrets') else None) or '20'
             try:
                 timeout_s = int(timeout_str)
             except (ValueError, TypeError):
                 timeout_s = 20
             
-            # If no email configured, just log it
+            # If no email configured, provide detailed error message
             if not sender_email or not sender_password:
-                self.last_email_error = "SMTP not configured: set EMAIL_USERNAME and EMAIL_PASSWORD (and optionally SMTP_SERVER/SMTP_PORT)."
+                error_details = []
+                if not sender_email:
+                    error_details.append("EMAIL_USERNAME is missing")
+                if not sender_password:
+                    error_details.append("EMAIL_PASSWORD is missing")
+                
+                # Try to provide helpful debugging info
+                debug_info = []
+                try:
+                    import streamlit as st
+                    if hasattr(st, 'secrets') and st.secrets:
+                        debug_info.append("Streamlit secrets object exists")
+                        if 'EMAIL_USERNAME' in st.secrets:
+                            debug_info.append(f"EMAIL_USERNAME found in secrets (length: {len(str(st.secrets['EMAIL_USERNAME']))})")
+                        else:
+                            debug_info.append("EMAIL_USERNAME NOT found in secrets")
+                        if 'EMAIL_PASSWORD' in st.secrets:
+                            debug_info.append(f"EMAIL_PASSWORD found in secrets (length: {len(str(st.secrets['EMAIL_PASSWORD']))})")
+                        else:
+                            debug_info.append("EMAIL_PASSWORD NOT found in secrets")
+                    else:
+                        debug_info.append("Streamlit secrets object not available")
+                except:
+                    debug_info.append("Could not access Streamlit secrets")
+                
+                self.last_email_error = f"SMTP not configured: {', '.join(error_details)}. Debug: {'; '.join(debug_info)}. Please check your .streamlit/secrets.toml file or environment variables."
                 print(self.last_email_error)
                 return False
             
