@@ -830,6 +830,7 @@ def show_student_attendance():
         )
         
         qr_data_input = None
+        qr_image = None
         
         if qr_method == "Paste QR Code Data":
             qr_data_input = st.text_area(
