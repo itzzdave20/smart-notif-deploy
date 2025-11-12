@@ -30,7 +30,7 @@ def check_secrets_file():
         with open(secrets_path, 'r') as f:
             content = f.read()
             
-        # Check for required fields
+        # Check for required fields (email)
         required_fields = ['EMAIL_USERNAME', 'EMAIL_PASSWORD', 'SMTP_SERVER', 'SMTP_PORT']
         missing_fields = []
         
@@ -39,10 +39,33 @@ def check_secrets_file():
                 missing_fields.append(field)
         
         if missing_fields:
-            print(f"⚠️  Missing required fields: {', '.join(missing_fields)}")
-            return False
+            print(f"⚠️  Missing required email fields: {', '.join(missing_fields)}")
+        else:
+            print("✅ All required email fields are present")
         
-        print("✅ All required fields are present")
+        # Check for Firebase HTTP v1 API (recommended)
+        if 'FIREBASE_ACCESS_TOKEN' in content:
+            if 'FIREBASE_ACCESS_TOKEN = ""' in content or 'FIREBASE_ACCESS_TOKEN=""' in content:
+                print("ℹ️  Firebase Access Token is empty (HTTP v1 API not configured)")
+            else:
+                print("✅ Firebase Access Token is configured (HTTP v1 API)")
+                if 'FIREBASE_PROJECT_ID' in content:
+                    if 'FIREBASE_PROJECT_ID = ""' not in content and 'FIREBASE_PROJECT_ID=""' not in content:
+                        print("✅ Firebase Project ID is configured")
+                    else:
+                        print("⚠️  Firebase Project ID is empty (required for HTTP v1 API)")
+                else:
+                    print("⚠️  Firebase Project ID not found (required for HTTP v1 API)")
+        else:
+            print("ℹ️  Firebase Access Token not found (HTTP v1 API not configured)")
+        
+        # Check for Legacy API (deprecated)
+        if 'FIREBASE_SERVER_KEY' in content:
+            if 'FIREBASE_SERVER_KEY = ""' in content or 'FIREBASE_SERVER_KEY=""' in content:
+                print("ℹ️  Firebase Server Key (Legacy) is empty")
+            else:
+                print("⚠️  Firebase Server Key (Legacy API) is configured - DEPRECATED")
+                print("   Please migrate to HTTP v1 API using FIREBASE_ACCESS_TOKEN")
         
         # Check for placeholder values
         if 'your_email@example.com' in content or 'your_app_password' in content:

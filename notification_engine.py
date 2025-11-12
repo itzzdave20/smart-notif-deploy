@@ -2,8 +2,10 @@ import smtplib
 import requests
 import json
 import os
+import re
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
+from pathlib import Path
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from database import DatabaseManager
@@ -30,7 +32,8 @@ class NotificationEngine:
         self.ai = AIFeatures()
         self.notification_queue = []
         self.sent_notifications = []
-        self.last_email_error = ""
+        self.last_email_error = None
+        self.last_push_error = None
     
     def _get_all_student_usernames(self) -> List[str]:
         """Read all student usernames from students.json."""
@@ -264,6 +267,7 @@ class NotificationEngine:
             ssl_value = None
             timeout_str = None
             
+            # Try to get from Streamlit secrets first
             try:
                 import streamlit as st
                 if hasattr(st, 'secrets') and st.secrets:
@@ -287,12 +291,108 @@ class NotificationEngine:
                             timeout_str = str(st.secrets['SMTP_TIMEOUT'])
                     except Exception as e:
                         print(f"Error reading Streamlit secrets: {e}")
-                        import traceback
-                        traceback.print_exc()
-            except ImportError:
+            except (ImportError, AttributeError, RuntimeError):
+                # Streamlit not available or not in Streamlit context
                 pass
             except Exception as e:
                 print(f"Error accessing Streamlit: {e}")
+            
+            # Fallback: Try to read secrets.toml file directly
+            if not sender_email or not sender_password:
+                try:
+                    import tomllib  # Python 3.11+
+                except ImportError:
+                    try:
+                        import tomli as tomllib  # Python < 3.11, need tomli package
+                    except ImportError:
+                        tomllib = None
+                
+                if tomllib:
+                    # Try multiple possible paths for secrets.toml
+                    possible_paths = [
+                        Path(".streamlit/secrets.toml"),
+                        Path("streamlit/secrets.toml"),
+                        Path(os.path.expanduser("~/.streamlit/secrets.toml")),
+                    ]
+                    secrets_path = None
+                    for path in possible_paths:
+                        if path.exists():
+                            secrets_path = path
+                            break
+                    
+                    if secrets_path:
+                        try:
+                            with open(secrets_path, 'rb') as f:
+                                secrets_data = tomllib.load(f)
+                            
+                            if not sender_email and 'EMAIL_USERNAME' in secrets_data:
+                                sender_email = str(secrets_data['EMAIL_USERNAME']).strip()
+                            if not sender_password and 'EMAIL_PASSWORD' in secrets_data:
+                                sender_password = str(secrets_data['EMAIL_PASSWORD']).strip()
+                            if not smtp_server and 'SMTP_SERVER' in secrets_data:
+                                smtp_server = str(secrets_data['SMTP_SERVER']).strip()
+                            if not smtp_port_str and 'SMTP_PORT' in secrets_data:
+                                smtp_port_str = str(secrets_data['SMTP_PORT']).strip()
+                            if not from_name and 'EMAIL_FROM_NAME' in secrets_data:
+                                from_name = str(secrets_data['EMAIL_FROM_NAME']).strip()
+                            if not reply_to and 'EMAIL_REPLY_TO' in secrets_data:
+                                reply_to = str(secrets_data['EMAIL_REPLY_TO']).strip() if secrets_data.get('EMAIL_REPLY_TO') else None
+                            if not ssl_value and 'SMTP_USE_SSL' in secrets_data:
+                                ssl_value = str(secrets_data['SMTP_USE_SSL']).strip()
+                            if not timeout_str and 'SMTP_TIMEOUT' in secrets_data:
+                                timeout_str = str(secrets_data['SMTP_TIMEOUT']).strip()
+                        except Exception as e:
+                            print(f"Error reading secrets.toml directly: {e}")
+                else:
+                    # Fallback: Simple string parsing if tomllib not available
+                    # Try multiple possible paths for secrets.toml
+                    possible_paths = [
+                        Path(".streamlit/secrets.toml"),
+                        Path("streamlit/secrets.toml"),
+                        Path(os.path.expanduser("~/.streamlit/secrets.toml")),
+                    ]
+                    secrets_path = None
+                    for path in possible_paths:
+                        if path.exists():
+                            secrets_path = path
+                            break
+                    
+                    if secrets_path:
+                        try:
+                            with open(secrets_path, 'r', encoding='utf-8') as f:
+                                content = f.read()
+                            
+                            # Simple regex-like parsing for TOML
+                            if not sender_email:
+                                match = re.search(r'EMAIL_USERNAME\s*=\s*"([^"]+)"', content)
+                                if match:
+                                    sender_email = match.group(1).strip()
+                            if not sender_password:
+                                match = re.search(r'EMAIL_PASSWORD\s*=\s*"([^"]+)"', content)
+                                if match:
+                                    sender_password = match.group(1).strip()
+                            if not smtp_server:
+                                match = re.search(r'SMTP_SERVER\s*=\s*"([^"]+)"', content)
+                                if match:
+                                    smtp_server = match.group(1).strip()
+                            if not smtp_port_str:
+                                match = re.search(r'SMTP_PORT\s*=\s*"([^"]+)"', content)
+                                if match:
+                                    smtp_port_str = match.group(1).strip()
+                            if not from_name:
+                                match = re.search(r'EMAIL_FROM_NAME\s*=\s*"([^"]+)"', content)
+                                if match:
+                                    from_name = match.group(1).strip()
+                            if not ssl_value:
+                                match = re.search(r'SMTP_USE_SSL\s*=\s*"([^"]+)"', content)
+                                if match:
+                                    ssl_value = match.group(1).strip()
+                            if not timeout_str:
+                                match = re.search(r'SMTP_TIMEOUT\s*=\s*"([^"]+)"', content)
+                                if match:
+                                    timeout_str = match.group(1).strip()
+                        except Exception as e:
+                            print(f"Error parsing secrets.toml: {e}")
             
             # Fallback to environment variables if secrets not available
             # Also handle empty strings (strip whitespace)
@@ -413,38 +513,180 @@ Smart Notification App
             # Don't fail the entire notification if email fails
             return False
     
-    def send_push_notification(self, notification: Dict) -> bool:
-        """Send push notification"""
+    def send_push_notification(self, notification: Dict, device_tokens: List[str] = None) -> bool:
+        """Send push notification via Firebase Cloud Messaging (FCM) HTTP v1 API"""
         try:
-            # This is a placeholder for push notification service
-            # You could integrate with services like Firebase, OneSignal, etc.
+            # Get Firebase configuration from secrets or environment
+            firebase_access_token = None
+            firebase_project_id = None
+            firebase_server_key = None  # Legacy support
             
+            try:
+                import streamlit as st
+                if hasattr(st, 'secrets') and st.secrets:
+                    # HTTP v1 API uses OAuth2 access token (preferred)
+                    if 'FIREBASE_ACCESS_TOKEN' in st.secrets:
+                        firebase_access_token = str(st.secrets['FIREBASE_ACCESS_TOKEN']).strip()
+                    # Legacy API uses server key (deprecated but still supported)
+                    if 'FIREBASE_SERVER_KEY' in st.secrets:
+                        firebase_server_key = str(st.secrets['FIREBASE_SERVER_KEY']).strip()
+                    if 'FIREBASE_PROJECT_ID' in st.secrets:
+                        firebase_project_id = str(st.secrets['FIREBASE_PROJECT_ID']).strip()
+            except:
+                pass
+            
+            # Fallback to environment variables
+            if not firebase_access_token:
+                firebase_access_token = os.getenv('FIREBASE_ACCESS_TOKEN', '').strip()
+            if not firebase_server_key:
+                firebase_server_key = os.getenv('FIREBASE_SERVER_KEY', '').strip()
+            if not firebase_project_id:
+                firebase_project_id = os.getenv('FIREBASE_PROJECT_ID', '').strip()
+            
+            # If no Firebase configuration, log and return (don't fail)
+            if not firebase_access_token and not firebase_server_key:
+                print("FIREBASE NOT CONFIGURED: FIREBASE_ACCESS_TOKEN or FIREBASE_SERVER_KEY not set.")
+                print("To enable: Add FIREBASE_ACCESS_TOKEN (HTTP v1 API) or FIREBASE_SERVER_KEY (Legacy) to .streamlit/secrets.toml")
+                print("Note: Legacy API is deprecated. Use HTTP v1 API with FIREBASE_ACCESS_TOKEN.")
+                return False
+            
+            # Prepare notification data
             push_data = {
                 'title': notification['title'],
                 'body': notification['message'],
-                'priority': notification['priority'],
-                'type': notification['notification_type'],
+                'priority': notification.get('priority', 1),
+                'type': notification.get('notification_type', 'info'),
                 'timestamp': datetime.now().isoformat()
             }
             
-            print(f"PUSH NOTIFICATION SENT:")
-            print(json.dumps(push_data, indent=2))
-            print("-" * 50)
+            # If device tokens provided, send to specific devices
+            if device_tokens and len(device_tokens) > 0:
+                success_count = 0
+                failure_count = 0
+                
+                # Use HTTP v1 API if access token is available (preferred)
+                if firebase_access_token and firebase_project_id:
+                    for token in device_tokens:
+                        try:
+                            # HTTP v1 API format
+                            url = f'https://fcm.googleapis.com/v1/projects/{firebase_project_id}/messages:send'
+                            headers = {
+                                'Authorization': f'Bearer {firebase_access_token}',
+                                'Content-Type': 'application/json'
+                            }
+                            
+                            # HTTP v1 API payload structure
+                            fcm_payload = {
+                                'message': {
+                                    'token': token,
+                                    'notification': {
+                                        'title': push_data['title'],
+                                        'body': push_data['body']
+                                    },
+                                    'data': {
+                                        'priority': str(push_data['priority']),
+                                        'type': push_data['type'],
+                                        'timestamp': push_data['timestamp']
+                                    },
+                                    'android': {
+                                        'priority': 'high' if push_data['priority'] >= 3 else 'normal'
+                                    },
+                                    'apns': {
+                                        'headers': {
+                                            'apns-priority': '10' if push_data['priority'] >= 3 else '5'
+                                        },
+                                        'payload': {
+                                            'aps': {
+                                                'sound': 'default',
+                                                'badge': 1
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            response = requests.post(url, headers=headers, json=fcm_payload, timeout=10)
+                            
+                            if response.status_code == 200:
+                                success_count += 1
+                            else:
+                                failure_count += 1
+                                print(f"   Device token error: {response.status_code} - {response.text}")
+                                
+                        except Exception as e:
+                            failure_count += 1
+                            print(f"   Error sending to device: {e}")
+                    
+                    if success_count > 0:
+                        print(f"✅ Push notification sent via HTTP v1 API!")
+                        print(f"   Success: {success_count}, Failed: {failure_count}")
+                        return True
+                
+                # Fallback to Legacy API if HTTP v1 not available
+                elif firebase_server_key:
+                    print("⚠️  Using deprecated Legacy FCM API. Please migrate to HTTP v1 API.")
+                    url = 'https://fcm.googleapis.com/fcm/send'
+                    headers = {
+                        'Authorization': f'key={firebase_server_key}',
+                        'Content-Type': 'application/json'
+                    }
+                    
+                    fcm_payload = {
+                        'registration_ids': device_tokens,
+                        'notification': {
+                            'title': push_data['title'],
+                            'body': push_data['body'],
+                            'sound': 'default',
+                            'badge': '1'
+                        },
+                        'data': {
+                            'priority': str(push_data['priority']),
+                            'type': push_data['type'],
+                            'timestamp': push_data['timestamp']
+                        },
+                        'priority': 'high' if push_data['priority'] >= 3 else 'normal'
+                    }
+                    
+                    response = requests.post(url, headers=headers, json=fcm_payload, timeout=10)
+                    
+                    if response.status_code == 200:
+                        result = response.json()
+                        success_count = result.get('success', 0)
+                        failure_count = result.get('failure', 0)
+                        print(f"✅ Push notification sent via Legacy API!")
+                        print(f"   Success: {success_count}, Failed: {failure_count}")
+                        
+                        if 'results' in result:
+                            for i, res in enumerate(result['results']):
+                                if 'error' in res:
+                                    print(f"   Device {i} error: {res['error']}")
+                        
+                        return success_count > 0
+                    else:
+                        error_msg = f"Firebase Legacy API error: {response.status_code} - {response.text}"
+                        print(f"❌ {error_msg}")
+                        self.last_push_error = error_msg
+                        return False
+                else:
+                    print("❌ No Firebase credentials available")
+                    return False
+            else:
+                # No device tokens - log the notification
+                print(f"PUSH NOTIFICATION PREPARED (no device tokens):")
+                print(json.dumps(push_data, indent=2))
+                print("Note: To send push notifications, device tokens are required.")
+                print("Users need to register for push notifications in the browser.")
+                return True
             
-            # Example Firebase implementation:
-            # if NOTIFICATION_API_KEY:
-            #     url = 'https://fcm.googleapis.com/fcm/send'
-            #     headers = {
-            #         'Authorization': f'key={NOTIFICATION_API_KEY}',
-            #         'Content-Type': 'application/json'
-            #     }
-            #     response = requests.post(url, headers=headers, json=push_data)
-            #     return response.status_code == 200
-            
-            return True
-            
+        except requests.exceptions.RequestException as e:
+            error_msg = f"Network error sending push notification: {e}"
+            print(f"❌ {error_msg}")
+            self.last_push_error = error_msg
+            return False
         except Exception as e:
-            print(f"Error sending push notification: {e}")
+            error_msg = f"Error sending push notification: {e}"
+            print(f"❌ {error_msg}")
+            self.last_push_error = error_msg
             return False
     
     def send_webhook_notification(self, notification: Dict) -> bool:
