@@ -1333,8 +1333,7 @@ def main():
                 st.markdown(restore_script, unsafe_allow_html=True)
 
     # Determine which portal should be shown (main vs admin-only)
-    query_params = st.experimental_get_query_params()
-    portal = query_params.get("portal", ["main"])[0]
+    portal = st.query_params.get("portal", ["main"])[0]
 
     # Check authentication - admin, student, or instructor
     admin_logged_in = check_admin_auth()
