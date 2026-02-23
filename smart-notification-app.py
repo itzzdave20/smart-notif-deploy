@@ -1094,6 +1094,14 @@ def clear_quick_meet_room():
     if os.path.exists(room_file):
         os.remove(room_file)
 
+def _qp_first(value, default=None):
+    """Return first query-param value, compatible with Streamlit versions."""
+    if value is None:
+        return default
+    if isinstance(value, (list, tuple)):
+        return value[0] if value else default
+    return value
+
 def render_quick_meet_sidebar(role: str, username: str):
     """Render Quick Meet controls in the sidebar for students and instructors."""
     default_room = suggest_room_for_user(username or role)
@@ -1209,7 +1217,7 @@ def main():
         
         # Try to restore student session - ONLY if it matches localStorage
         if 'student_logged_in' not in st.session_state:
-            stored_session_id = query_params.get('restore_student_session', None)
+            stored_session_id = _qp_first(query_params.get('restore_student_session'), None)
             if stored_session_id:
                 try:
                     from user_auth import StudentAuth
@@ -1236,7 +1244,7 @@ def main():
         
         # Try to restore instructor session - ONLY if it matches localStorage
         if 'instructor_logged_in' not in st.session_state:
-            stored_session_id = query_params.get('restore_instructor_session', None)
+            stored_session_id = _qp_first(query_params.get('restore_instructor_session'), None)
             if stored_session_id:
                 try:
                     from instructor_auth import InstructorAuth
@@ -1260,7 +1268,7 @@ def main():
         
         # Try to restore admin session - ONLY if it matches localStorage
         if 'admin_logged_in' not in st.session_state:
-            stored_session_id = query_params.get('restore_admin_session', None)
+            stored_session_id = _qp_first(query_params.get('restore_admin_session'), None)
             if stored_session_id:
                 try:
                     from admin_auth import AdminAuth
@@ -1333,7 +1341,7 @@ def main():
                 st.markdown(restore_script, unsafe_allow_html=True)
 
     # Determine which portal should be shown (main vs admin-only)
-    portal = st.query_params.get("portal", ["main"])[0]
+    portal = _qp_first(st.query_params.get("portal"), "main") or "main"
 
     # Check authentication - admin, student, or instructor
     admin_logged_in = check_admin_auth()
