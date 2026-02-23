@@ -1197,7 +1197,6 @@ def main():
         unsafe_allow_html=True
     )
 
-<<<<<<< HEAD
     # Restore sessions ONLY if they match the current browser's localStorage
     # This prevents one user's session from being restored for another user
     # Each browser only restores its own session based on localStorage
@@ -1332,46 +1331,16 @@ def main():
                 </script>
                 """
                 st.markdown(restore_script, unsafe_allow_html=True)
-=======
+
     # Determine which portal should be shown (main vs admin-only)
     query_params = st.experimental_get_query_params()
     portal = query_params.get("portal", ["main"])[0]
->>>>>>> 888d720 (Update landing page: separate admin portal, student/instructor login tabs)
 
     # Check authentication - admin, student, or instructor
     admin_logged_in = check_admin_auth()
     student_logged_in = check_student_auth()
     instructor_logged_in = check_instructor_auth()
     if not admin_logged_in and not student_logged_in and not instructor_logged_in:
-<<<<<<< HEAD
-        # Minimal login screen: only login options and forms
-        st.subheader("Choose Login Type")
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.markdown("### 🛡️ Admin Login")
-            if st.button("Admin Login", key="admin_login_btn"):
-                st.session_state.login_type = "admin"
-                streamlit_rerun()
-        with col2:
-            st.markdown("### 🎓 Student Login")
-            if st.button("Student Login", key="student_login_btn"):
-                st.session_state.login_type = "student"
-                streamlit_rerun()
-        with col3:
-            st.markdown("### 🎓 Instructor Login")
-            if st.button("Instructor Login", key="instructor_login_btn"):
-                st.session_state.login_type = "instructor"
-                streamlit_rerun()
-        # Show login form based on selected type
-        if 'login_type' in st.session_state:
-            if st.session_state.login_type == "admin":
-                show_admin_login()
-            elif st.session_state.login_type == "student":
-                show_student_login()
-            elif st.session_state.login_type == "instructor":
-                show_instructor_login()
-        # No extra info, no AI, no meet, no default credentials
-=======
         # If the URL is explicitly set to the admin portal, show ONLY the admin login here
         if portal == "admin":
             st.markdown("### 🛡️ Admin Portal")
@@ -1394,7 +1363,6 @@ def main():
             show_instructor_login()
 
         # No admin login on the main page – it is available only via the dedicated admin portal URL.
->>>>>>> 888d720 (Update landing page: separate admin portal, student/instructor login tabs)
         return
     # User is logged in - show appropriate interface
     if admin_logged_in:
