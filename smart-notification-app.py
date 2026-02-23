@@ -1197,6 +1197,7 @@ def main():
         unsafe_allow_html=True
     )
 
+<<<<<<< HEAD
     # Restore sessions ONLY if they match the current browser's localStorage
     # This prevents one user's session from being restored for another user
     # Each browser only restores its own session based on localStorage
@@ -1331,12 +1332,18 @@ def main():
                 </script>
                 """
                 st.markdown(restore_script, unsafe_allow_html=True)
+=======
+    # Determine which portal should be shown (main vs admin-only)
+    query_params = st.experimental_get_query_params()
+    portal = query_params.get("portal", ["main"])[0]
+>>>>>>> 888d720 (Update landing page: separate admin portal, student/instructor login tabs)
 
     # Check authentication - admin, student, or instructor
     admin_logged_in = check_admin_auth()
     student_logged_in = check_student_auth()
     instructor_logged_in = check_instructor_auth()
     if not admin_logged_in and not student_logged_in and not instructor_logged_in:
+<<<<<<< HEAD
         # Minimal login screen: only login options and forms
         st.subheader("Choose Login Type")
         col1, col2, col3 = st.columns(3)
@@ -1364,6 +1371,30 @@ def main():
             elif st.session_state.login_type == "instructor":
                 show_instructor_login()
         # No extra info, no AI, no meet, no default credentials
+=======
+        # If the URL is explicitly set to the admin portal, show ONLY the admin login here
+        if portal == "admin":
+            st.markdown("### 🛡️ Admin Portal")
+            st.info("This secure portal is for system administrators only.")
+            show_admin_login()
+            return
+
+        # Default landing page: only Student and Instructor login forms
+        st.subheader("Login to Chat Ping")
+        st.markdown(
+            "Choose your role below to access your personalized dashboard.",
+        )
+
+        student_tab, instructor_tab = st.tabs(["🎓 Student Login", "🎓 Instructor Login"])
+
+        with student_tab:
+            show_student_login()
+
+        with instructor_tab:
+            show_instructor_login()
+
+        # No admin login on the main page – it is available only via the dedicated admin portal URL.
+>>>>>>> 888d720 (Update landing page: separate admin portal, student/instructor login tabs)
         return
     # User is logged in - show appropriate interface
     if admin_logged_in:
