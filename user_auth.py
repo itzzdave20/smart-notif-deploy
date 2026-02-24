@@ -656,27 +656,55 @@ def show_student_classes():
             st.info("No classes available at the moment.")
 
 def show_student_dashboard():
-    """Show student dashboard"""
+    """Show a polished, student-focused dashboard"""
     st.header("📊 Student Dashboard")
-    
+
     auth = st.session_state.student_auth
     session_id = st.session_state.get('student_session_id')
-    
+
     if not session_id:
         st.error("No student session found. Please login again.")
         return
-    
+
     student_info = auth.get_student_info(session_id)
-    
+
     if not student_info:
         st.error("Unable to load student information")
         st.write(f"Debug: Session ID: {session_id}")
         return
-    
-    # Welcome message
+
     profile = student_info["profile"]
-    st.success(f"Welcome back, {profile['first_name']}!")
-    
+
+    # Hero / welcome card
+    st.markdown(
+        f"""
+        <div class="metric-card" style="margin-bottom: 1.5rem; display:flex; align-items:flex-start; justify-content:space-between; gap:1.5rem;">
+          <div>
+            <div style="font-size:0.85rem;color:var(--text-light);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:0.15rem;">
+              Student Overview
+            </div>
+            <div style="font-size:1.8rem;font-weight:700;color:var(--text-color);margin-bottom:0.25rem;">
+              Welcome back, {profile['first_name'].title()} 👋
+            </div>
+            <div style="font-size:0.95rem;color:var(--text-light);max-width:420px;">
+              Stay on top of your classes, attendance, and notifications in one clean dashboard.
+            </div>
+          </div>
+          <div style="text-align:right;min-width:180px;">
+            <div style="font-size:0.8rem;color:var(--text-light);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:0.35rem;">
+              At a glance
+            </div>
+            <div style="font-size:0.95rem;color:var(--text-light);">
+              <div><strong>Major:</strong> {profile['major']}</div>
+              <div><strong>Year:</strong> {profile['year']}</div>
+              <div><strong>Role:</strong> {student_info['role'].title()}</div>
+            </div>
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
     # Check for new notifications
     student_username = student_info['username']
     all_notifications = st.session_state.db.get_notifications(limit=100)
@@ -686,114 +714,180 @@ def show_student_dashboard():
         # Include if targeted to this student or is a general/broadcast notification
         if target_student is None or target_student == '' or target_student == student_username:
             student_notifications.append(n)
-    
-    # Track last seen notification
+
     if 'last_seen_notification_id' not in st.session_state:
         st.session_state.last_seen_notification_id = 0
-    
+
     new_notifications = [
-        n for n in student_notifications 
+        n for n in student_notifications
         if n.get('id', 0) > st.session_state.last_seen_notification_id
     ]
-    
-    # Show notification alert on dashboard
+
+    # Subtle notification banner
     if new_notifications:
-        st.warning(f"🔔 You have {len(new_notifications)} new notification(s)! Click 'View Notifications' to see them.")
-        # Play sound and show browser notification
-        # Note: These functions are defined in smart-notification-app.py
-        # They will be called when the page renders
-        st.markdown("""
-        <script>
-        (function(){
-          try {
-            const AudioCtx = window.AudioContext || window.webkitAudioContext;
-            if (AudioCtx) {
-              const ctx = new AudioCtx();
-              const osc = ctx.createOscillator();
-              const gain = ctx.createGain();
-              osc.type = 'sine';
-              osc.frequency.setValueAtTime(880, ctx.currentTime);
-              gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-              gain.gain.exponentialRampToValueAtTime(0.15, ctx.currentTime + 0.01);
-              gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.20);
-              osc.connect(gain);
-              gain.connect(ctx.destination);
-              osc.start();
-              osc.stop(ctx.currentTime + 0.21);
-            }
-            
-            if ('Notification' in window && Notification.permission === 'granted') {
-              new Notification('""" + new_notifications[0]['title'] + """', {
-                body: '""" + new_notifications[0]['message'][:100] + """',
-                icon: '🔔'
-              });
-            } else if ('Notification' in window && Notification.permission !== 'denied') {
-              Notification.requestPermission().then(function(permission) {
-                if (permission === 'granted') {
-                  new Notification('""" + new_notifications[0]['title'] + """', {
-                    body: '""" + new_notifications[0]['message'][:100] + """',
-                    icon: '🔔'
-                  });
-                }
-              });
-            }
-          } catch(e) {}
-        })();
-        </script>
-        """, unsafe_allow_html=True)
-    
-    # Student stats
+        count = len(new_notifications)
+        st.markdown(
+            f"""
+            <div style="
+                border-radius: var(--radius-lg);
+                padding: 0.9rem 1.1rem;
+                margin-bottom: 1.25rem;
+                background: rgba(251, 191, 36, 0.08);
+                border: 1px solid rgba(251, 191, 36, 0.4);
+                display:flex;
+                align-items:center;
+                justify-content:space-between;
+                gap:0.75rem;
+            ">
+              <div style="display:flex;align-items:center;gap:0.6rem;">
+                <span style="font-size:1.25rem;">🔔</span>
+                <div>
+                  <div style="font-weight:600;color:var(--text-color);">
+                    You have {count} new notification{'' if count == 1 else 's'}.
+                  </div>
+                  <div style="font-size:0.9rem;color:var(--text-light);">
+                    Open the Notifications tab to review important updates from your instructors and the system.
+                  </div>
+                </div>
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    # Key stats as professional cards
     col1, col2, col3, col4 = st.columns(4)
-    
+
     with col1:
-        st.metric("Your Role", student_info['role'].title())
+        st.markdown(
+            f"""
+            <div class="metric-card">
+              <div style="font-size:0.8rem;color:var(--text-light);text-transform:uppercase;letter-spacing:0.12em;">Your Role</div>
+              <div style="font-size:1.4rem;font-weight:700;margin-top:0.25rem;">{student_info['role'].title()}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
     with col2:
-        st.metric("Major", profile['major'])
+        st.markdown(
+            f"""
+            <div class="metric-card">
+              <div style="font-size:0.8rem;color:var(--text-light);text-transform:uppercase;letter-spacing:0.12em;">Major</div>
+              <div style="font-size:1.4rem;font-weight:700;margin-top:0.25rem;">{profile['major']}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
     with col3:
-        st.metric("Year", profile['year'])
+        st.markdown(
+            f"""
+            <div class="metric-card">
+              <div style="font-size:0.8rem;color:var(--text-light);text-transform:uppercase;letter-spacing:0.12em;">Year</div>
+              <div style="font-size:1.4rem;font-weight:700;margin-top:0.25rem;">{profile['year']}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
     with col4:
         notification_count = len(student_notifications)
-        st.metric("Notifications", f"{notification_count} total")
-    
-    # Quick actions based on permissions
-    st.subheader("Quick Actions")
-    
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        if auth.has_student_permission(st.session_state.student_session_id, "attendance"):
-            if st.button("📝 Mark Attendance", type="primary", key="dashboard_attendance"):
-                st.session_state.student_page = "attendance"
+        st.markdown(
+            f"""
+            <div class="metric-card">
+              <div style="font-size:0.8rem;color:var(--text-light);text-transform:uppercase;letter-spacing:0.12em;">Notifications</div>
+              <div style="font-size:1.4rem;font-weight:700;margin-top:0.25rem;">{notification_count}</div>
+              <div style="font-size:0.85rem;color:var(--text-light);margin-top:0.1rem;">total received</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    # Quick actions based on permissions, inside a soft card
+    st.markdown(
+        """
+        <div style="margin-top:1.75rem;margin-bottom:0.75rem;font-weight:600;font-size:1.05rem;color:var(--text-color);">
+          Quick Actions ↪
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    with st.container():
+        col1, col2, col3, col4 = st.columns(4)
+
+        with col1:
+            if auth.has_student_permission(st.session_state.student_session_id, "attendance"):
+                if st.button("📝 Mark Attendance", type="primary", key="dashboard_attendance", use_container_width=True):
+                    st.session_state.student_page = "attendance"
+                    st.rerun()
+
+        with col2:
+            if auth.has_student_permission(st.session_state.student_session_id, "read"):
+                if st.button("📊 View Reports", type="primary", key="dashboard_reports", use_container_width=True):
+                    st.session_state.student_page = "reports"
+                    st.rerun()
+
+        with col3:
+            if st.button("🔔 Notifications", type="primary", key="dashboard_notifications", use_container_width=True):
+                st.session_state.student_page = "notifications"
                 st.rerun()
-    
-    with col2:
-        if auth.has_student_permission(st.session_state.student_session_id, "read"):
-            if st.button("📊 View Reports", type="primary", key="dashboard_reports"):
-                st.session_state.student_page = "reports"
+
+        with col4:
+            if st.button("👤 My Profile", type="primary", key="dashboard_profile", use_container_width=True):
+                st.session_state.student_page = "profile"
                 st.rerun()
-    
-    with col3:
-        if st.button("🔔 Notifications", type="primary", key="dashboard_notifications"):
-            st.session_state.student_page = "notifications"
-            st.rerun()
-    
-    with col4:
-        if st.button("👤 My Profile", type="primary", key="dashboard_profile"):
-            st.session_state.student_page = "profile"
-            st.rerun()
-    
+
     # Recent notifications preview
     if student_notifications:
-        st.subheader("Recent Notifications")
+        st.markdown(
+            """
+            <div style="margin-top:2rem;margin-bottom:0.5rem;font-weight:600;font-size:1.05rem;color:var(--text-color);">
+              Recent Notifications
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
         for notification in student_notifications[:3]:  # Show last 3
-            with st.container():
-                st.write(f"**{notification['title']}**")
-                st.caption(f"{notification['message'][:100]}... | {notification['created_at']}")
-                st.markdown("---")
-    
-    # Recent activity (placeholder)
-    st.subheader("Recent Activity")
-    st.info("Your recent activity will appear here as you use the system.")
+            st.markdown(
+                f"""
+                <div class="notification-card">
+                  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:0.75rem;">
+                    <div>
+                      <div style="font-weight:600;color:var(--text-color);margin-bottom:0.15rem;">
+                        {notification['title']}
+                      </div>
+                      <div style="font-size:0.9rem;color:var(--text-light);">
+                        {notification['message'][:160]}{'...' if len(notification['message']) > 160 else ''}
+                      </div>
+                    </div>
+                    <div style="font-size:0.8rem;color:var(--text-light);white-space:nowrap;">
+                      {notification['created_at']}
+                    </div>
+                  </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+    # Recent activity placeholder
+    st.markdown(
+        """
+        <div style="margin-top:2rem;font-weight:600;font-size:1.05rem;color:var(--text-color);">
+          Recent Activity
+        </div>
+        <div style="
+            margin-top:0.5rem;
+            padding:1rem 1.1rem;
+            border-radius:var(--radius-lg);
+            background:rgba(148, 163, 184, 0.08);
+            border:1px dashed rgba(148, 163, 184, 0.7);
+            font-size:0.9rem;
+            color:var(--text-light);
+        ">
+          Your recent activity will appear here as you continue using Chat Ping.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 def show_student_attendance():
     """Show student attendance interface with QR code and selfie"""
@@ -1065,7 +1159,24 @@ def show_student_attendance():
 def show_student_notifications():
     """Show student notifications interface"""
     st.header("🔔 My Notifications")
-    
+
+    # Professional intro card for context
+    st.markdown(
+        """
+        <div class="metric-card" style="margin-bottom: 1.25rem;">
+          <div style="font-size:0.85rem;color:var(--text-light);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:0.15rem;">
+            Notification Center
+          </div>
+          <div style="font-size:1.4rem;font-weight:700;color:var(--text-color);margin-bottom:0.35rem;">
+            Stay on top of announcements, reminders, and alerts.
+          </div>
+          <div style="font-size:0.9rem;color:var(--text-light);max-width:520px;">
+            Messages are sorted by most recent first. High-priority items are highlighted so you can act on what matters quickly.
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
     auth = st.session_state.student_auth
     session_id = st.session_state.get('student_session_id')
     
@@ -1103,63 +1214,70 @@ def show_student_notifications():
         if not student_notifications:
             st.info("📭 No notifications yet. You'll see notifications from your instructors here.")
             return
-        
+
         st.success(f"📬 You have {len(student_notifications)} notification(s)")
-        st.markdown("---")
-        
-        # Display notifications
+        st.markdown("")
+
+        # Display notifications using polished cards
+        type_labels = {
+            'info': 'ℹ️ Information',
+            'alert': '⚠️ Alert',
+            'reminder': '⏰ Reminder',
+            'announcement': '📢 Announcement',
+            'attendance': '📝 Attendance',
+            'test': '🧪 Test'
+        }
+
         for idx, notification in enumerate(student_notifications):
-            with st.container():
-                col1, col2 = st.columns([4, 1])
-                
-                with col1:
-                    # Notification title
-                    priority = notification.get('priority', 1)
-                    priority_emoji = "🔴" if priority >= 4 else "🟡" if priority >= 3 else "🟢"
-                    st.markdown(f"### {priority_emoji} {notification.get('title', 'Notification')}")
-                    
-                    # Notification message
-                    message = notification.get('message', '')
-                    st.markdown(f"{message}")
-                    
-                    # Notification metadata
-                    col_meta1, col_meta2, col_meta3 = st.columns(3)
-                    with col_meta1:
-                        notification_type = notification.get('notification_type', 'info')
-                        type_labels = {
-                            'info': 'ℹ️ Information',
-                            'alert': '⚠️ Alert',
-                            'reminder': '⏰ Reminder',
-                            'announcement': '📢 Announcement',
-                            'attendance': '📝 Attendance',
-                            'test': '🧪 Test'
-                        }
-                        st.caption(f"**Type:** {type_labels.get(notification_type, notification_type)}")
-                    
-                    with col_meta2:
-                        created_at = notification.get('created_at') or notification.get('timestamp', '')
-                        if created_at:
-                            try:
-                                if isinstance(created_at, str):
-                                    dt = datetime.fromisoformat(created_at.replace('Z', '+00:00') if 'Z' in created_at else created_at)
-                                else:
-                                    dt = created_at
-                                st.caption(f"**Date:** {dt.strftime('%Y-%m-%d %H:%M')}")
-                            except:
-                                st.caption(f"**Date:** {created_at}")
-                        else:
-                            st.caption("**Date:** N/A")
-                    
-                    with col_meta3:
-                        st.caption(f"**Priority:** {priority}/5")
-                
-                with col2:
-                    # Mark as read button (optional)
-                    if st.button("✓ Read", key=f"mark_read_{idx}", help="Mark as read"):
-                        st.success("Marked as read!")
-                        st.rerun()
-                
-                st.markdown("---")
+            priority = notification.get('priority', 1)
+            priority_emoji = "🔴" if priority >= 4 else "🟡" if priority >= 3 else "🟢"
+            title = notification.get('title', 'Notification')
+            message = notification.get('message', '')
+
+            notification_type = notification.get('notification_type', 'info')
+            type_label = type_labels.get(notification_type, notification_type)
+
+            created_at = notification.get('created_at') or notification.get('timestamp', '')
+            date_str = "N/A"
+            if created_at:
+                try:
+                    if isinstance(created_at, str):
+                        dt = datetime.fromisoformat(created_at.replace('Z', '+00:00') if 'Z' in created_at else created_at)
+                    else:
+                        dt = created_at
+                    date_str = dt.strftime('%Y-%m-%d %H:%M')
+                except Exception:
+                    date_str = str(created_at)
+
+            st.markdown(
+                f"""
+                <div class="notification-card">
+                  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:0.75rem;">
+                    <div>
+                      <div style="font-weight:600;color:var(--text-color);margin-bottom:0.15rem;">
+                        {priority_emoji} {title}
+                      </div>
+                      <div style="font-size:0.9rem;color:var(--text-light);white-space:pre-wrap;">
+                        {message}
+                      </div>
+                      <div style="margin-top:0.6rem;font-size:0.8rem;color:var(--text-light);display:flex;flex-wrap:wrap;gap:1.25rem;">
+                        <span><strong>Type:</strong> {type_label}</span>
+                        <span><strong>Date:</strong> {date_str}</span>
+                        <span><strong>Priority:</strong> {priority}/5</span>
+                      </div>
+                    </div>
+                    <div>
+                      <!-- Placeholder for Streamlit button area -->
+                    </div>
+                  </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            # Simple mark-as-read interaction (non-persistent, for UX feedback)
+            if st.button("✓ Mark as read", key=f"mark_read_{idx}", help="This will clear the highlight for this session only."):
+                st.success(f"Marked '{title}' as read for this session.")
         
         # Refresh button
         if st.button("🔄 Refresh Notifications", key="refresh_notifications"):
@@ -1241,3 +1359,4 @@ def require_student_auth(func):
         return func(*args, **kwargs)
     return wrapper
 
+    
