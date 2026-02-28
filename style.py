@@ -549,7 +549,7 @@ GLOBAL_CSS = string.Template("""
   
   [data-baseweb="tab"]:hover {
     color: var(--primary-color) !important;
-    background: rgba(255, 107, 107, 0.05);
+    background: rgba(99, 102, 241, 0.06);
   }
   
   [data-baseweb="tab"][aria-selected="true"] {
@@ -609,7 +609,7 @@ GLOBAL_CSS = string.Template("""
   
   .stFileUploader > div:hover {
     border-color: var(--primary-color);
-    background: linear-gradient(135deg, rgba(255, 107, 107, 0.05) 0%, #ffffff 100%);
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, #ffffff 100%);
   }
   
   /* Divider styling */
@@ -678,7 +678,7 @@ GLOBAL_CSS = string.Template("""
   }
   
   tbody tr:hover { 
-    background: linear-gradient(90deg, rgba(255, 107, 107, 0.05) 0%, transparent 100%) !important;
+    background: linear-gradient(90deg, rgba(99, 102, 241, 0.05) 0%, transparent 100%) !important;
     transform: scale(1.01);
     box-shadow: var(--shadow-sm);
   }
@@ -741,7 +741,7 @@ GLOBAL_CSS = string.Template("""
   /* Colored cards */
   .card-primary { 
     border-left: 4px solid var(--primary-color); 
-    background: linear-gradient(135deg, #fff5f5 0%, #fff 100%); 
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.06) 0%, #fff 100%); 
     padding: 1.5rem; 
     border-radius: 12px;
     box-shadow: var(--shadow-md);

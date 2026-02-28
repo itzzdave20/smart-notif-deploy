@@ -176,18 +176,24 @@ class InstructorAuth:
     
     def verify_instructor_session(self, session_id):
         """Verify instructor session"""
-        if session_id not in self.instructor_sessions:
+        if not session_id:
             return False, None
-        
+
+        # Reload from disk if session not in memory (e.g. after server restart or new tab)
+        if session_id not in self.instructor_sessions:
+            self.load_instructor_sessions()
+            if session_id not in self.instructor_sessions:
+                return False, None
+
         session = self.instructor_sessions[session_id]
         expires_at = datetime.fromisoformat(session["expires_at"])
-        
+
         if datetime.now() > expires_at:
             # Session expired
             del self.instructor_sessions[session_id]
             self.save_instructor_sessions()
             return False, None
-        
+
         return True, session
     
     def logout_instructor(self, session_id):
@@ -473,10 +479,11 @@ def show_instructor_login():
                     success, result = auth.authenticate_instructor(username, password, remember_me=remember_me)
                     
                     if success:
+                        st.session_state.instructor_auth = auth
                         st.session_state.instructor_logged_in = True
                         st.session_state.instructor_session_id = result
                         st.session_state.instructor_username = username
-                        
+
                         # Save to localStorage if "Remember me" is checked
                         if remember_me:
                             st.markdown(f"""
