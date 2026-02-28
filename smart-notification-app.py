@@ -37,6 +37,38 @@ from meetings import render_meeting, suggest_room_for_user, jitsi_url, sanitize_
 
 SIDEBAR_CUSTOM_CSS = """
 <style>
+/* Hide Streamlit sidebar collapse button icon text when Material font fails to load */
+[data-testid="collapsedControl"],
+[data-testid="collapsedControl"] * {
+    font-size: 0 !important;
+    line-height: 0 !important;
+}
+[data-testid="collapsedControl"]::after {
+    content: '›';
+    font-size: 1.35rem !important;
+    font-weight: 700;
+    color: #6366F1;
+    line-height: 1;
+    display: inline-block;
+}
+/* Collapse button when sidebar is open (first button in sidebar or in header) */
+section[data-testid="stSidebar"] > div > button,
+section[data-testid="stSidebar"] [data-testid="stSidebarContent"] ~ button,
+[data-testid="stHeader"] button[aria-label*="sidebar"],
+[data-testid="stHeader"] button[aria-label*="Sidebar"] {
+    font-size: 0 !important;
+}
+section[data-testid="stSidebar"] > div > button::after,
+[data-testid="stHeader"] button[aria-label*="sidebar"]::after,
+[data-testid="stHeader"] button[aria-label*="Sidebar"]::after {
+    content: '‹';
+    font-size: 1.35rem !important;
+    font-weight: 700;
+    color: #6366F1;
+    line-height: 1;
+    display: inline-block;
+}
+
 /* Professional sidebar - indigo/purple theme aligned with main app */
 section[data-testid="stSidebar"] {
     background: linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F5F3FF 100%) !important;
@@ -44,6 +76,7 @@ section[data-testid="stSidebar"] {
     padding: 24px 18px 48px;
     box-shadow: 2px 0 24px rgba(99, 102, 241, 0.08);
     border-right: 1px solid rgba(99, 102, 241, 0.12);
+    min-width: 280px !important;
 }
 
 section[data-testid="stSidebar"] > div:first-child {
@@ -57,6 +90,14 @@ section[data-testid="stSidebar"] [data-testid="stSidebarContent"] {
     padding: 20px 16px 32px;
     backdrop-filter: blur(12px);
     border: 1px solid rgba(99, 102, 241, 0.1);
+    min-width: 0;
+}
+
+/* Prevent nav and labels from truncating */
+section[data-testid="stSidebar"] [role="radiogroup"] > label {
+    white-space: normal !important;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 section[data-testid="stSidebar"] h1,
@@ -146,14 +187,46 @@ section[data-testid="stSidebar"] .stMarkdown a:hover {
     text-decoration: underline;
 }
 
-/* Quick Meet expander - professional card style */
+/* Quick Meet expander - professional card style, fix overlap of title and icon */
 section[data-testid="stSidebar"] .streamlit-expanderHeader {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 10px !important;
     background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.06) 100%) !important;
     border: 1px solid rgba(99, 102, 241, 0.15);
     border-radius: 12px;
-    padding: 12px 14px;
+    padding: 12px 14px !important;
     font-weight: 600;
     color: #1E293B !important;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Ensure expander label has space and doesn't overlap the chevron */
+section[data-testid="stSidebar"] .streamlit-expanderHeader > div:first-child {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+
+/* Keep expander chevron/icon from shrinking */
+section[data-testid="stSidebar"] .streamlit-expanderHeader > div:last-child {
+    flex: 0 0 auto !important;
+    min-width: 22px !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+}
+/* Replace broken Material icon text in expander with a clean chevron */
+section[data-testid="stSidebar"] .streamlit-expanderHeader > div:last-child::after {
+    content: '▼';
+    font-size: 0.6rem !important;
+    color: #6366F1;
+    line-height: 1;
+    display: inline-block;
+    vertical-align: middle;
 }
 
 section[data-testid="stSidebar"] .streamlit-expanderContent {
