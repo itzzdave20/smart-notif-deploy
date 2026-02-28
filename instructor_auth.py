@@ -569,9 +569,7 @@ def check_instructor_auth():
     return True
 
 def show_instructor_dashboard():
-    """Show instructor dashboard"""
-    st.header("🎓 Instructor Dashboard")
-    
+    """Show instructor dashboard with professional, polished layout matching student overview"""
     auth = InstructorAuth()
     instructor_info = auth.get_instructor_info(st.session_state.instructor_session_id)
     
@@ -579,66 +577,207 @@ def show_instructor_dashboard():
         st.error("Unable to load instructor information")
         return
     
-    # Welcome message
     profile = instructor_info["profile"]
-    st.success(f"Welcome back, {profile['first_name']} {profile['last_name']}!")
-    
-    # Instructor stats
-    col1, col2, col3, col4 = st.columns(4)
-    
     instructor_classes = auth.get_instructor_classes(instructor_info['username'])
+    total_students = sum(len(c["enrolled_students"]) for c in instructor_classes.values())
     
+    # Hero / welcome card (matches student dashboard style)
+    st.markdown(
+        f"""
+        <div class="metric-card" style="margin-bottom: 1.5rem; display:flex; align-items:flex-start; justify-content:space-between; gap:1.5rem;">
+          <div>
+            <div style="font-size:0.85rem;color:var(--text-light);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:0.15rem;">
+              Instructor Overview
+            </div>
+            <div style="font-size:1.8rem;font-weight:700;color:var(--text-color);margin-bottom:0.25rem;">
+              Welcome back, {profile['first_name'].title()} {profile['last_name'].title()} 👋
+            </div>
+            <div style="font-size:0.95rem;color:var(--text-light);max-width:420px;">
+              Manage your classes, attendance, and notifications in one clean dashboard.
+            </div>
+          </div>
+          <div style="text-align:right;min-width:180px;">
+            <div style="font-size:0.8rem;color:var(--text-light);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:0.35rem;">
+              At a glance
+            </div>
+            <div style="font-size:0.95rem;color:var(--text-light);">
+              <div><strong>Department:</strong> {profile.get('department', 'N/A')}</div>
+              <div><strong>Specialization:</strong> {profile.get('specialization', 'N/A')}</div>
+              <div><strong>Role:</strong> {instructor_info['role'].title()}</div>
+            </div>
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    
+    # Instructor notifications (general/broadcast - no target_student)
+    try:
+        all_notifications = st.session_state.db.get_notifications(limit=100) if hasattr(st.session_state, 'db') and st.session_state.db else []
+    except Exception:
+        all_notifications = []
+    instructor_notifications = [n for n in (all_notifications or []) if not n.get('target_student') or n.get('target_student') == '']
+    new_count = len([n for n in instructor_notifications if n.get('id', 0) > st.session_state.get('instructor_last_seen_notification_id', 0)])
+    
+    if new_count > 0:
+        st.markdown(
+            f"""
+            <div style="
+                border-radius: var(--radius-lg);
+                padding: 0.9rem 1.1rem;
+                margin-bottom: 1.25rem;
+                background: rgba(251, 191, 36, 0.08);
+                border: 1px solid rgba(251, 191, 36, 0.4);
+                display:flex;
+                align-items:center;
+                justify-content:space-between;
+                gap:0.75rem;
+            ">
+              <div style="display:flex;align-items:center;gap:0.6rem;">
+                <span style="font-size:1.25rem;">🔔</span>
+                <div>
+                  <div style="font-weight:600;color:var(--text-color);">
+                    You have {new_count} new notification{'' if new_count == 1 else 's'}.
+                  </div>
+                  <div style="font-size:0.9rem;color:var(--text-light);">
+                    Open the Notifications tab to review updates from the system and your classes.
+                  </div>
+                </div>
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    
+    # Key stats as professional metric cards
+    col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.metric("My Classes", len(instructor_classes))
+        st.markdown(
+            f"""
+            <div class="metric-card">
+              <div style="font-size:0.8rem;color:var(--text-light);text-transform:uppercase;letter-spacing:0.12em;">My Classes</div>
+              <div style="font-size:1.4rem;font-weight:700;margin-top:0.25rem;">{len(instructor_classes)}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
     with col2:
-        total_students = sum(len(class_data["enrolled_students"]) for class_data in instructor_classes.values())
-        st.metric("Total Students", total_students)
+        st.markdown(
+            f"""
+            <div class="metric-card">
+              <div style="font-size:0.8rem;color:var(--text-light);text-transform:uppercase;letter-spacing:0.12em;">Total Students</div>
+              <div style="font-size:1.4rem;font-weight:700;margin-top:0.25rem;">{total_students}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
     with col3:
-        st.metric("Department", profile['department'])
+        st.markdown(
+            f"""
+            <div class="metric-card">
+              <div style="font-size:0.8rem;color:var(--text-light);text-transform:uppercase;letter-spacing:0.12em;">Department</div>
+              <div style="font-size:1.4rem;font-weight:700;margin-top:0.25rem;">{profile.get('department', 'N/A')}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
     with col4:
-        st.metric("Specialization", profile.get('specialization', 'N/A'))
+        st.markdown(
+            f"""
+            <div class="metric-card">
+              <div style="font-size:0.8rem;color:var(--text-light);text-transform:uppercase;letter-spacing:0.12em;">Notifications</div>
+              <div style="font-size:1.4rem;font-weight:700;margin-top:0.25rem;">{len(instructor_notifications)}</div>
+              <div style="font-size:0.85rem;color:var(--text-light);margin-top:0.1rem;">total received</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
     
-    # Quick actions
-    st.subheader("Quick Actions")
+    # Quick actions section
+    st.markdown(
+        """
+        <div style="margin-top:1.75rem;margin-bottom:0.75rem;font-weight:600;font-size:1.05rem;color:var(--text-color);">
+          Quick Actions ↪
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
     
-    col1, col2, col3 = st.columns(3)
+    with st.container():
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            if st.button("📚 Manage Classes", type="primary", key="dashboard_manage_classes", use_container_width=True):
+                st.session_state.instructor_page = "class_management"
+                st.rerun()
+        with col2:
+            if st.button("📝 Take Attendance", type="primary", key="dashboard_attendance", use_container_width=True):
+                st.session_state.instructor_page = "attendance"
+                st.rerun()
+        with col3:
+            if st.button("🔔 Send Notifications", type="primary", key="dashboard_notifications", use_container_width=True):
+                st.session_state.instructor_page = "notifications"
+                st.rerun()
+        with col4:
+            if st.button("👤 My Profile", type="primary", key="dashboard_profile", use_container_width=True):
+                st.session_state.instructor_page = "profile"
+                st.rerun()
     
-    with col1:
-        if st.button("📚 Manage Classes", type="primary"):
-            st.session_state.instructor_page = "class_management"
-            st.rerun()
+    # My Classes section (styled like notification cards)
+    st.markdown(
+        """
+        <div style="margin-top:2rem;margin-bottom:0.5rem;font-weight:600;font-size:1.05rem;color:var(--text-color);">
+          My Classes
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
     
-    with col2:
-        if st.button("📝 Take Attendance", type="primary"):
-            st.session_state.instructor_page = "attendance"
-            st.rerun()
-    
-    with col3:
-        if st.button("🔔 Send Notifications", type="primary"):
-            st.session_state.instructor_page = "notifications"
-            st.rerun()
-    
-    # Recent classes
-    st.subheader("My Classes")
     if instructor_classes:
         for class_code, class_data in instructor_classes.items():
-            with st.container():
-                col1, col2, col3 = st.columns([2, 1, 1])
-                
-                with col1:
-                    st.write(f"**{class_code}:** {class_data['class_name']}")
-                    st.write(f"Schedule: {class_data['schedule']} | Room: {class_data['room']}")
-                
-                with col2:
-                    st.write(f"Students: {len(class_data['enrolled_students'])}")
-                
-                with col3:
-                    if st.button(f"Manage", key=f"dashboard_manage_{class_code}"):
-                        st.session_state.selected_class = class_code
-                        st.session_state.instructor_page = "class_detail"
-                        st.rerun()
+            cc, cb = st.columns([4, 1])
+            with cc:
+                st.markdown(
+                    f"""
+                    <div class="notification-card">
+                      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:0.75rem;">
+                        <div>
+                          <div style="font-weight:600;color:var(--text-color);margin-bottom:0.15rem;">
+                            {class_code}: {class_data.get('class_name', 'N/A')}
+                          </div>
+                          <div style="font-size:0.9rem;color:var(--text-light);">
+                            Schedule: {class_data.get('schedule', 'N/A')} | Room: {class_data.get('room', 'N/A')}
+                          </div>
+                          <div style="margin-top:0.5rem;font-size:0.85rem;color:var(--text-light);">
+                            <strong>{len(class_data.get('enrolled_students', []))}</strong> students enrolled
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+            with cb:
+                if st.button("Manage →", key=f"dashboard_manage_{class_code}", use_container_width=True):
+                    st.session_state.selected_class = class_code
+                    st.session_state.instructor_page = "class_management"
+                    st.rerun()
     else:
-        st.info("No classes assigned yet. Create a new class to get started!")
+        st.markdown(
+            """
+            <div style="
+                margin-top:0.5rem;
+                padding:1rem 1.1rem;
+                border-radius:var(--radius-lg);
+                background:rgba(148, 163, 184, 0.08);
+                border:1px dashed rgba(148, 163, 184, 0.7);
+                font-size:0.9rem;
+                color:var(--text-light);
+            ">
+              No classes assigned yet. Create a new class to get started!
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
 def show_instructor_profile():
     """Show instructor profile management"""
