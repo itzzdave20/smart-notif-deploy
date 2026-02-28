@@ -176,24 +176,18 @@ class InstructorAuth:
     
     def verify_instructor_session(self, session_id):
         """Verify instructor session"""
-        if not session_id:
-            return False, None
-
-        # Reload from disk if session not in memory (e.g. after server restart or new tab)
         if session_id not in self.instructor_sessions:
-            self.load_instructor_sessions()
-            if session_id not in self.instructor_sessions:
-                return False, None
-
+            return False, None
+        
         session = self.instructor_sessions[session_id]
         expires_at = datetime.fromisoformat(session["expires_at"])
-
+        
         if datetime.now() > expires_at:
             # Session expired
             del self.instructor_sessions[session_id]
             self.save_instructor_sessions()
             return False, None
-
+        
         return True, session
     
     def logout_instructor(self, session_id):
@@ -471,7 +465,8 @@ def show_instructor_login():
             with col1:
                 login_button = st.form_submit_button("Login", type="primary")
             with col2:
-                remember_me = st.checkbox("Remember me")
+                # Default to remembering the instructor on this device
+                remember_me = st.checkbox("Remember me", value=True)
             
             if login_button:
                 if username and password:
@@ -479,11 +474,10 @@ def show_instructor_login():
                     success, result = auth.authenticate_instructor(username, password, remember_me=remember_me)
                     
                     if success:
-                        st.session_state.instructor_auth = auth
                         st.session_state.instructor_logged_in = True
                         st.session_state.instructor_session_id = result
                         st.session_state.instructor_username = username
-
+                        
                         # Save to localStorage if "Remember me" is checked
                         if remember_me:
                             st.markdown(f"""
@@ -544,24 +538,12 @@ def show_instructor_login():
 def show_instructor_logout():
     """Display instructor logout button"""
     if st.sidebar.button("🚪 Logout", type="secondary"):
-        if 'instructor_session_id' in st.session_state:
-            auth = InstructorAuth()
-            auth.logout_instructor(st.session_state.instructor_session_id)
-        
-        # Clear instructor session state
+        # Clear instructor session state for the current browser session only.
+        # The persistent "remember me" session remains on disk/localStorage
+        # so that reopening the app can automatically log the instructor back in.
         for key in ['instructor_logged_in', 'instructor_session_id', 'instructor_username']:
             if key in st.session_state:
                 del st.session_state[key]
-        
-        # Clear localStorage
-        st.markdown("""
-        <script>
-        localStorage.removeItem('instructor_session_id');
-        localStorage.removeItem('instructor_username');
-        localStorage.removeItem('instructor_remember_me');
-        localStorage.removeItem('user_type');
-        </script>
-        """, unsafe_allow_html=True)
         
         st.success("✅ Logged out successfully!")
         st.rerun()

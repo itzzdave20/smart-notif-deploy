@@ -17,19 +17,10 @@ streamlit run smart-notification-app.py --server.address 0.0.0.0
 
 **Access from mobile:** `http://YOUR_IP:8501`
 
-### Option 2: Deploy to Streamlit Community Cloud (Recommended)
-1. **Push this repo to GitHub** (if not already):
-   ```bash
-   git add .
-   git commit -m "Professional UI and Quick Meet enhancements"
-   git push origin main
-   ```
-2. Go to **[share.streamlit.io](https://share.streamlit.io)** and sign in with GitHub.
-3. Click **New app** and set:
-   - **Repository:** `your-username/smart-notification-app`
-   - **Branch:** `main`
-   - **Main file path:** `smart-notification-app.py`
-4. Click **Deploy**. Your app will be live at `https://your-app-name.streamlit.app`.
+### Option 2: Deploy to Cloud (Recommended)
+1. **Push to GitHub**
+2. **Deploy on Streamlit Cloud**: [share.streamlit.io](https://share.streamlit.io)
+3. **Share the URL** with users
 
 ## 📱 Mobile Features
 
@@ -46,10 +37,6 @@ streamlit run smart-notification-app.py --server.address 0.0.0.0
 - **QR Code Scanning**: Mobile-optimized QR handling
 
 ## 👥 User Roles & Login
-
-- **Student** and **Instructor** log in from the main page (tabs: **Student Login** / **Instructor Login**).  
-- Check **"Remember me"** to stay signed in; closing and reopening the app will log you in automatically.  
-- Log out with the sidebar **Logout** button; next visit shows the login page again.
 
 ### Admin (Full Access)
 - **Username:** `admin`
@@ -122,19 +109,6 @@ streamlit run smart-notification-app.py --server.address 0.0.0.0
 - **Touch Optimization** for mobile interaction
 
 ## 📊 Deployment Options
-
-### Deploy to Streamlit Community Cloud (recommended)
-
-1. **Push your app to GitHub** (this repo or a fork).
-2. Go to **[share.streamlit.io](https://share.streamlit.io)** and sign in with GitHub.
-3. Click **"New app"** and set:
-   - **Repository:** your GitHub repo (e.g. `yourusername/smart-notification-app`)
-   - **Branch:** `main` (or your default branch)
-   - **Main file path:** `smart-notification-app.py`
-4. Click **"Deploy"**. The app will use the root `requirements.txt` automatically.
-5. After deploy, share the generated URL (e.g. `https://yourapp.streamlit.app`).
-
-**Stay logged in:** Users who check **"Remember me"** when logging in (Student or Instructor) will be automatically logged in when they open the app again in the same browser. Logging out clears the session and shows the login page on the next visit.
 
 ### 1. Streamlit Cloud (Free)
 - Push to GitHub → Deploy on share.streamlit.io

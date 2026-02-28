@@ -319,7 +319,8 @@ def show_student_login():
             with col1:
                 login_button = st.form_submit_button("Login", type="primary")
             with col2:
-                remember_me = st.checkbox("Remember me")
+                # Default to remembering the student on this device
+                remember_me = st.checkbox("Remember me", value=True)
             
             if login_button:
                 if username and password:
@@ -404,24 +405,12 @@ def show_student_login():
 def show_student_logout():
     """Display student logout button"""
     if st.sidebar.button("🚪 Logout", type="secondary"):
-        if 'student_session_id' in st.session_state:
-            auth = StudentAuth()
-            auth.logout_student(st.session_state.student_session_id)
-        
-        # Clear student session state
+        # Clear student session state for the current browser session only.
+        # The persistent "remember me" session remains on disk/localStorage
+        # so that reopening the app can automatically log the student back in.
         for key in ['student_logged_in', 'student_session_id', 'student_username']:
             if key in st.session_state:
                 del st.session_state[key]
-        
-        # Clear localStorage
-        st.markdown("""
-        <script>
-        localStorage.removeItem('student_session_id');
-        localStorage.removeItem('student_username');
-        localStorage.removeItem('student_remember_me');
-        localStorage.removeItem('user_type');
-        </script>
-        """, unsafe_allow_html=True)
         
         st.success("✅ Logged out successfully!")
         st.rerun()

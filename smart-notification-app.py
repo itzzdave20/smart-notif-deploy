@@ -37,46 +37,11 @@ from meetings import render_meeting, suggest_room_for_user, jitsi_url, sanitize_
 
 SIDEBAR_CUSTOM_CSS = """
 <style>
-/* Hide Streamlit sidebar collapse button icon text when Material font fails to load */
-[data-testid="collapsedControl"],
-[data-testid="collapsedControl"] * {
-    font-size: 0 !important;
-    line-height: 0 !important;
-}
-[data-testid="collapsedControl"]::after {
-    content: '›';
-    font-size: 1.35rem !important;
-    font-weight: 700;
-    color: #6366F1;
-    line-height: 1;
-    display: inline-block;
-}
-/* Collapse button when sidebar is open (first button in sidebar or in header) */
-section[data-testid="stSidebar"] > div > button,
-section[data-testid="stSidebar"] [data-testid="stSidebarContent"] ~ button,
-[data-testid="stHeader"] button[aria-label*="sidebar"],
-[data-testid="stHeader"] button[aria-label*="Sidebar"] {
-    font-size: 0 !important;
-}
-section[data-testid="stSidebar"] > div > button::after,
-[data-testid="stHeader"] button[aria-label*="sidebar"]::after,
-[data-testid="stHeader"] button[aria-label*="Sidebar"]::after {
-    content: '‹';
-    font-size: 1.35rem !important;
-    font-weight: 700;
-    color: #6366F1;
-    line-height: 1;
-    display: inline-block;
-}
-
-/* Professional sidebar - indigo/purple theme aligned with main app */
 section[data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 50%, #F5F3FF 100%) !important;
-    color: #1E293B;
+    background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+    color: #0f172a;
     padding: 24px 18px 48px;
-    box-shadow: 2px 0 24px rgba(99, 102, 241, 0.08);
-    border-right: 1px solid rgba(99, 102, 241, 0.12);
-    min-width: 280px !important;
+    box-shadow: 4px 0 18px rgba(15, 23, 42, 0.25);
 }
 
 section[data-testid="stSidebar"] > div:first-child {
@@ -85,19 +50,11 @@ section[data-testid="stSidebar"] > div:first-child {
 
 section[data-testid="stSidebar"] .block-container,
 section[data-testid="stSidebar"] [data-testid="stSidebarContent"] {
-    background: rgba(255, 255, 255, 0.92);
-    border-radius: 16px;
-    padding: 20px 16px 32px;
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(99, 102, 241, 0.1);
-    min-width: 0;
-}
-
-/* Prevent nav and labels from truncating */
-section[data-testid="stSidebar"] [role="radiogroup"] > label {
-    white-space: normal !important;
-    word-wrap: break-word;
-    overflow-wrap: break-word;
+    background: rgba(255, 255, 255, 0.78);
+    border-radius: 20px;
+    padding: 20px 18px 36px;
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(148, 163, 184, 0.35);
 }
 
 section[data-testid="stSidebar"] h1,
@@ -106,61 +63,56 @@ section[data-testid="stSidebar"] h3,
 section[data-testid="stSidebar"] p,
 section[data-testid="stSidebar"] label,
 section[data-testid="stSidebar"] span {
-    color: #1E293B !important;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: #0f172a !important;
 }
 
 section[data-testid="stSidebar"] hr {
-    border-color: rgba(99, 102, 241, 0.2) !important;
+    border-color: rgba(148, 163, 184, 0.4) !important;
 }
 
-/* Sidebar buttons - professional indigo (logout, etc.) */
 section[data-testid="stSidebar"] .stButton > button {
     width: 100%;
-    border-radius: 12px;
+    border-radius: 14px;
     border: none;
-    background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%) !important;
-    color: #fff !important;
+    background: linear-gradient(135deg, #fb7185, #f97316);
+    color: #fff;
     font-weight: 600;
-    font-size: 0.875rem;
-    letter-spacing: 0.02em;
-    padding: 0.7rem 1rem;
-    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    letter-spacing: 0.3px;
+    padding: 0.75rem 1rem;
+    box-shadow: 0 10px 25px rgba(249, 115, 22, 0.35);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 section[data-testid="stSidebar"] .stButton > button:hover {
     transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
-    background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%) !important;
+    box-shadow: 0 12px 28px rgba(249, 115, 22, 0.45);
 }
 
 section[data-testid="stSidebar"] .stButton > button:focus {
     outline: none;
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.35);
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.35);
 }
 
-/* Navigation radio items - clean professional look */
 section[data-testid="stSidebar"] [role="radiogroup"] > label {
-    background: rgba(99, 102, 241, 0.06);
-    border-radius: 12px;
+    background: rgba(148, 163, 184, 0.12);
+    border-radius: 14px;
     padding: 10px 14px;
-    border: 1px solid rgba(99, 102, 241, 0.15);
-    margin-bottom: 6px;
-    transition: all 0.2s ease;
-    color: #1E293B !important;
+    border: 1px solid transparent;
+    margin-bottom: 8px;
+    transition: all 0.18s ease;
+    color: #0f172a !important;
 }
 
 section[data-testid="stSidebar"] [role="radiogroup"] > label:hover {
-    border-color: rgba(99, 102, 241, 0.4);
-    background: rgba(99, 102, 241, 0.1);
+    border-color: rgba(100, 116, 139, 0.45);
+    background: rgba(148, 163, 184, 0.24);
 }
 
 section[data-testid="stSidebar"] [role="radiogroup"] > label[data-checked="true"] {
-    border-color: #6366F1;
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.12) 100%);
-    box-shadow: 0 2px 12px rgba(99, 102, 241, 0.2);
-    color: #1E293B !important;
+    border-color: rgba(249, 115, 22, 0.75);
+    background: rgba(249, 115, 22, 0.2);
+    box-shadow: 0 10px 22px rgba(249, 115, 22, 0.25);
+    color: #0f172a !important;
 }
 
 section[data-testid="stSidebar"] [role="radiogroup"] [role="radio"] {
@@ -168,107 +120,42 @@ section[data-testid="stSidebar"] [role="radiogroup"] [role="radio"] {
 }
 
 section[data-testid="stSidebar"] .stMetric {
-    background: rgba(99, 102, 241, 0.06);
-    border: 1px solid rgba(99, 102, 241, 0.12);
-    border-radius: 12px;
-    padding: 14px;
-    margin-bottom: 10px;
+    background: rgba(226, 232, 240, 0.45);
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    border-radius: 18px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.25);
 }
 
-/* Sidebar links (e.g. email) - professional indigo, not red */
 section[data-testid="stSidebar"] .stMarkdown a {
-    color: #6366F1 !important;
+    color: #b91c1c !important;
     text-decoration: none;
-    font-weight: 500;
+    font-weight: 600;
 }
 
 section[data-testid="stSidebar"] .stMarkdown a:hover {
-    color: #4F46E5 !important;
+    color: #7f1d1d !important;
     text-decoration: underline;
 }
 
-/* Quick Meet expander - professional card style, fix overlap of title and icon */
-section[data-testid="stSidebar"] .streamlit-expanderHeader {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    gap: 10px !important;
-    background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.06) 100%) !important;
-    border: 1px solid rgba(99, 102, 241, 0.15);
-    border-radius: 12px;
-    padding: 12px 14px !important;
-    font-weight: 600;
-    color: #1E293B !important;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-/* Ensure expander label has space and doesn't overlap the chevron */
-section[data-testid="stSidebar"] .streamlit-expanderHeader > div:first-child {
-    flex: 1 1 auto !important;
-    min-width: 0 !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    white-space: nowrap !important;
-}
-
-/* Keep expander chevron/icon from shrinking */
-section[data-testid="stSidebar"] .streamlit-expanderHeader > div:last-child {
-    flex: 0 0 auto !important;
-    min-width: 22px !important;
-    font-size: 0 !important;
-    line-height: 0 !important;
-}
-/* Replace broken Material icon text in expander with a clean chevron */
-section[data-testid="stSidebar"] .streamlit-expanderHeader > div:last-child::after {
-    content: '▼';
-    font-size: 0.6rem !important;
-    color: #6366F1;
-    line-height: 1;
-    display: inline-block;
-    vertical-align: middle;
-}
-
-section[data-testid="stSidebar"] .streamlit-expanderContent {
-    padding: 14px 0 8px 0;
-    border-bottom: 1px solid rgba(99, 102, 241, 0.1);
-}
-
-section[data-testid="stSidebar"] .streamlit-expanderContent .stTextInput > div > div > input {
-    border-radius: 10px;
-    border: 1px solid rgba(99, 102, 241, 0.25);
-    font-size: 0.9rem;
-    padding: 8px 12px;
-}
-
-section[data-testid="stSidebar"] .streamlit-expanderContent .stTextInput > div > div > input:focus {
-    border-color: #6366F1;
-    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
-}
-
-section[data-testid="stSidebar"] .streamlit-expanderContent .stButton > button {
-    font-size: 0.8rem;
-    padding: 6px 12px;
-    border-radius: 10px;
-}
-
 section[data-testid="stSidebar"]::-webkit-scrollbar {
-    width: 8px;
+    width: 10px;
 }
 
 section[data-testid="stSidebar"]::-webkit-scrollbar-track {
-    background: rgba(99, 102, 241, 0.06);
-    border-radius: 8px;
+    background: transparent;
 }
 
 section[data-testid="stSidebar"]::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, #6366F1, #8B5CF6);
-    border-radius: 8px;
+    background-color: rgba(148, 163, 184, 0.45);
+    border-radius: 12px;
 }
 
 @media (max-width: 992px) {
     section[data-testid="stSidebar"] {
         padding: 18px 16px 32px;
+        transition: transform 0.2s ease, width 0.2s ease, padding 0.2s ease;
     }
 
     section[data-testid="stSidebar"] .block-container,
@@ -276,6 +163,7 @@ section[data-testid="stSidebar"]::-webkit-scrollbar-thumb {
         padding: 16px 14px 28px;
     }
 
+    /* Ensure the sidebar fully collapses on mobile when closed */
     section[data-testid="stSidebar"][aria-expanded="false"] {
         width: 0 !important;
         min-width: 0 !important;
@@ -289,12 +177,14 @@ section[data-testid="stSidebar"]::-webkit-scrollbar-thumb {
         opacity: 0 !important;
     }
 
+    /* When expanded, ensure it is visible */
     section[data-testid="stSidebar"][aria-expanded="true"] {
         transform: translateX(0) !important;
         opacity: 1 !important;
         pointer-events: auto !important;
     }
 
+    /* Prevent leftover spacing on main content when sidebar is closed */
     div[data-testid="stAppViewContainer"] > div:has(> section[data-testid="stSidebar"][aria-expanded="false"]) + main,
     div[data-testid="stAppViewContainer"] > aside[aria-expanded="false"] + main {
         margin-left: 0 !important;
@@ -1277,22 +1167,8 @@ def render_active_quick_meet_embed(role: str):
         return
 
     st.markdown("---")
-    st.markdown(
-        """
-        <div class="quickmeet-embed-header" style="
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.06) 100%);
-            border: 1px solid rgba(99, 102, 241, 0.15);
-            border-radius: 16px;
-            padding: 1.25rem 1.5rem;
-            margin-bottom: 1rem;
-        ">
-            <div style="font-family: 'Inter', sans-serif; font-weight: 600; font-size: 1.15rem; color: #1E293B; margin-bottom: 0.25rem;">📹 Quick Meet Room</div>
-            <div style="font-size: 0.9rem; color: #64748B;">Use the room name below to join.</div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-    st.caption(f"**Room:** `{room}`")
+    st.subheader("📹 Quick Meet Room")
+    st.caption(f"Room: `{room}`")
     render_meeting(room, height=520)
     st.markdown(f"[Open in new tab]({jitsi_url(room)})")
 
@@ -1318,11 +1194,11 @@ def main():
     
     st.markdown(
         """
-        <div class="app-branding" style="text-align: center; margin-bottom: 1.5rem;">
+        <div style="text-align: center;">
             <h1 class="main-header">🔔 Chat Ping</h1>
-            <p style="font-family: 'Inter', sans-serif; font-size: 1.05rem; color: var(--text-light); font-weight: 500; letter-spacing: 0.02em; margin-top: -0.5rem;">Smart Notification App</p>
-            <div class="offline-indicator" style="display: none; background: #FEF3C7; color: #92400E; padding: 8px 16px; border-radius: 8px; margin: 10px auto; max-width: 300px; font-size: 0.9rem;">
-                📱 Working Offline — Data will sync when online
+            <p>Smart Notification App</p>
+            <div class="offline-indicator" style="display: none; background: #ffeb3b; color: #333; padding: 8px; border-radius: 8px; margin: 10px auto; max-width: 300px;">
+                📱 Working Offline - Data will sync when online
             </div>
         </div>
         """,
@@ -1484,7 +1360,6 @@ def main():
         st.markdown(
             "Choose your role below to access your personalized dashboard.",
         )
-        st.caption("💡 Check **Remember me** when logging in to stay signed in. When you close and reopen the app, you’ll be logged in automatically.")
 
         student_tab, instructor_tab = st.tabs(["🎓 Student Login", "🎓 Instructor Login"])
 
@@ -1497,25 +1372,6 @@ def main():
         # No admin login on the main page – it is available only via the dedicated admin portal URL.
         return
     # User is logged in - show appropriate interface
-    # Remove restore session params from URL once (keeps session ID out of address bar)
-    if admin_logged_in or student_logged_in or instructor_logged_in:
-        if not st.session_state.get('url_cleanup_done'):
-            qp = st.query_params
-            if qp.get('restore_student_session') or qp.get('restore_instructor_session') or qp.get('restore_admin_session'):
-                st.session_state.url_cleanup_done = True
-                st.markdown("""
-                <script>
-                (function(){
-                    const p = new URLSearchParams(window.location.search);
-                    p.delete('restore_student_session');
-                    p.delete('restore_instructor_session');
-                    p.delete('restore_admin_session');
-                    const q = p.toString();
-                    const newUrl = window.location.pathname + (q ? '?' + q : '');
-                    window.history.replaceState({}, '', newUrl);
-                })();
-                </script>
-                """, unsafe_allow_html=True)
     if admin_logged_in:
         show_admin_interface()
     elif student_logged_in:
