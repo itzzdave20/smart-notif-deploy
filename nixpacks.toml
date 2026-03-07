@@ -1,0 +1,3 @@
+# Nixpacks config for Railway – system deps for OpenCV headless
+[phases.setup]
+nixPkgs = ["...", "libGL", "glib", "glibc", "libGLU", "pkg-config"]
